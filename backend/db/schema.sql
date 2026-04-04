@@ -1,10 +1,11 @@
 CREATE TABLE IF NOT EXISTS users (
-
-  user_id     INTEGER PRIMARY KEY,	
-  display_name   VARCHAR(50),
-  email          VARCHAR(50),
-  password_hash  VARCHAR(50)
-  
+    user_id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    display_name VARCHAR(100),
+    is_first_login BOOLEAN DEFAULT TRUE, -- Your Onboarding Flag
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS day_logs (
@@ -150,7 +151,7 @@ CREATE TABLE IF NOT EXISTS log_stickers (
 
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL, -- Assuming you'll link this to a Users table later
+    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,    
     title VARCHAR(255) NOT NULL,
     description TEXT,
     due_date TIMESTAMP NOT NULL,
