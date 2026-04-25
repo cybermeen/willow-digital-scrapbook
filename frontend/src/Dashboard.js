@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ToDo from './ToDo';
 import './Dashboard.css';
 
 function Dashboard({ user, onLogout }) {
+  const [activeTab, setActiveTab] = useState('todo');
+
+  const navItems = [
+    { id: 'today',    label: '🌤 Today' },
+    { id: 'daylog',   label: '📓 Day Log' },
+    { id: 'todo',     label: '✅ To-Do' },
+    { id: 'scrapbook',label: '📌 Scrapbook' },
+  ];
+
+  const initials = user?.displayName
+    ? user.displayName.charAt(0).toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() || '?';
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -9,29 +23,51 @@ function Dashboard({ user, onLogout }) {
           <span>🌿</span>
           <span className="dashboard-logo-name">Willow</span>
         </div>
+
+        <nav className="dashboard-nav">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              className={`nav-btn ${activeTab === item.id ? 'nav-btn--active' : ''}`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
         <div className="dashboard-user">
-          <span className="dashboard-greeting">
-            Hello, {user?.displayName || user?.email || 'there'} 👋
-          </span>
-          <button className="btn-logout" onClick={onLogout}>
-            Log Out
-          </button>
+          <div className="user-avatar" title={user?.displayName || user?.email}>
+            {initials}
+          </div>
+          <button className="btn-logout" onClick={onLogout}>Log Out</button>
         </div>
       </header>
 
       <main className="dashboard-main">
-        <div className="dashboard-welcome">
-          <h1>You're in. 🌱</h1>
-          <p>
-            Your dashboard is coming soon. Tasks, progress, and more —
-            all in one place.
-          </p>
-          <div className="dashboard-placeholder">
-            <div className="placeholder-card">📋 Tasks</div>
-            <div className="placeholder-card">📈 Progress</div>
-            <div className="placeholder-card">📖 Scrapbook</div>
+        {activeTab === 'todo' && <ToDo user={user} />}
+
+        {activeTab === 'today' && (
+          <div className="coming-soon">
+            <span>🌤</span>
+            <h2>Today</h2>
+            <p>Coming soon</p>
           </div>
-        </div>
+        )}
+        {activeTab === 'daylog' && (
+          <div className="coming-soon">
+            <span>📓</span>
+            <h2>Day Log</h2>
+            <p>Coming soon</p>
+          </div>
+        )}
+        {activeTab === 'scrapbook' && (
+          <div className="coming-soon">
+            <span>📌</span>
+            <h2>Scrapbook</h2>
+            <p>Coming soon</p>
+          </div>
+        )}
       </main>
     </div>
   );
