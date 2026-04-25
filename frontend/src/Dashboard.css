@@ -1,0 +1,110 @@
+/* ─── Dashboard Layout ────────────────────────────────────── */
+
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #faf9f6;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* ─── Header ──────────────────────────────────────────────── */
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid #e8ede8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.dashboard-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #3d5c3d;
+}
+
+.dashboard-logo-name {
+  color: #3d5c3d;
+}
+
+.dashboard-user {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.dashboard-greeting {
+  font-size: 0.9rem;
+  color: #5c7a5c;
+}
+
+.btn-logout {
+  padding: 0.45rem 1.1rem;
+  background: transparent;
+  border: 1.5px solid #c0cfc0;
+  border-radius: 8px;
+  color: #4a6b4a;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+  background: #f0f5f0;
+  border-color: #5c7a5c;
+}
+
+/* ─── Main content ────────────────────────────────────────── */
+
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.dashboard-welcome {
+  text-align: center;
+  max-width: 520px;
+}
+
+.dashboard-welcome h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.75rem;
+  color: #2d3d2d;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-welcome p {
+  color: #7a8c7a;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-placeholder {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.placeholder-card {
+  padding: 1.25rem 1.75rem;
+  background: #fff;
+  border: 1.5px dashed #c0cfc0;
+  border-radius: 14px;
+  color: #9aaa9a;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
