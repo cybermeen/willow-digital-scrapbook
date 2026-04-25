@@ -323,25 +323,44 @@ exports.getDailyPrompt = async (req, res) => {
   try {
     const userId = req.user.id;
     const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    const promptType = (req.query.type || '').toLowerCase();
 
-    // Count total active prompts
-    const countResult = await db.query(
-      'SELECT COUNT(*) FROM reflective_prompts WHERE is_active = true'
-    );
-    const total = parseInt(countResult.rows[0].count);
-    if (total === 0) return res.status(404).json({ error: 'No prompts available' });
+    const categoryMap = {
+      short: 'general',
+      reflective: 'growth',
+      creative: 'fun',
+      gratitude: 'gratitude'
+    };
 
-    // Deterministic 'random': pick index based on userId + date hash
-    // This gives a consistent prompt per user per day
+    const category = categoryMap[promptType] || promptType;
+
+    const queryParams = [];
+    let countQuery = 'SELECT COUNT(*) FROM reflective_prompts WHERE is_active = true';
+    let selectQuery = 'SELECT * FROM reflective_prompts WHERE is_active = true';
+
+    if (category) {
+      countQuery += ' AND category = $1';
+      selectQuery += ' AND category = $1';
+      queryParams.push(category);
+    }
+
+    const countResult = await db.query(countQuery, queryParams);
+    let total = parseInt(countResult.rows[0].count);
+
+    if (total === 0 && category) {
+      // Fallback to any active prompt if no prompt exists for this category.
+      total = parseInt((await db.query('SELECT COUNT(*) FROM reflective_prompts WHERE is_active = true')).rows[0].count);
+      if (total === 0) return res.status(404).json({ error: 'No prompts available' });
+      queryParams.length = 0;
+      selectQuery = 'SELECT * FROM reflective_prompts WHERE is_active = true';
+    }
+
     const dateNum = parseInt(today.replace(/-/g, ''));
     const offset = (userId + dateNum) % total;
+    selectQuery += ' ORDER BY id LIMIT 1 OFFSET $' + (queryParams.length + 1);
+    queryParams.push(offset);
 
-    const result = await db.query(
-      `SELECT * FROM reflective_prompts`,
-      ` WHERE is_active = true ORDER BY id LIMIT 1 OFFSET $1`,
-      [offset]
-    );
-
+    const result = await db.query(selectQuery, queryParams);
     res.json(result.rows[0]);
 
   } catch (err) {
@@ -383,7 +402,7 @@ exports.savePromptAnswer = async (req, res) => {
 exports.getArtAssets = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT * FROM art_assets WHERE is_active = true ORDER BY category, name`
+      `SELECT * FROM art_assets WHERE is_active = true ORDER BY name`
     );
     res.json(result.rows);
   } catch (err) {
@@ -517,6 +536,133 @@ exports.unlockAchievement = async (req, res) => {
     });
 
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// PATCH /api/scrapbook/logs/:logId
+// Update log-level settings (mood, layout, etc.)
+exports.updateLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const { mood, layout_style } = req.body;
+
+    const isOwner = await verifyLogOwnership(logId, req.user.id);
+    if (!isOwner) return res.status(403).json({ error: 'Access denied' });
+
+    const result = await db.query(
+      `UPDATE day_logs 
+       SET mood = COALESCE($1, mood),
+           layout_style = COALESCE($2, layout_style),
+           updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
+      [mood || null, layout_style || null, logId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updateLog error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// PATCH /api/scrapbook/prompts/answer/:answerId
+// Update a prompt answer
+exports.updatePromptAnswer = async (req, res) => {
+  try {
+    const { answerId } = req.params;
+    const { answer_text } = req.body;
+
+    if (!answer_text || answer_text.trim() === '') {
+      return res.status(400).json({ error: 'Answer cannot be empty' });
+    }
+
+    // Verify ownership
+    const ownership = await db.query(
+      `SELECT dl.user_id FROM log_prompt_answers lpa
+       JOIN day_logs dl ON lpa.log_id = dl.id
+       WHERE lpa.id = $1`,
+      [answerId]
+    );
+
+    if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await db.query(
+      `UPDATE log_prompt_answers 
+       SET answer_text = $1, updated_at = NOW()
+       WHERE id = $2 RETURNING *`,
+      [answer_text.trim(), answerId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updatePromptAnswer error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// PATCH /api/scrapbook/stickers/:stickerId
+// Update sticker position/size
+exports.updateSticker = async (req, res) => {
+  try {
+    const { stickerId } = req.params;
+    const { pos_x, pos_y, width, height, rotation, z_index } = req.body;
+
+    // Verify ownership
+    const ownership = await db.query(
+      `SELECT dl.user_id FROM log_stickers ls
+       JOIN day_logs dl ON ls.log_id = dl.id
+       WHERE ls.id = $1`,
+      [stickerId]
+    );
+
+    if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await db.query(
+      `UPDATE log_stickers
+       SET pos_x = COALESCE($1, pos_x),
+           pos_y = COALESCE($2, pos_y),
+           width = COALESCE($3, width),
+           height = COALESCE($4, height),
+           rotation = COALESCE($5, rotation),
+           z_index = COALESCE($6, z_index)
+       WHERE id = $7 RETURNING *`,
+      [pos_x, pos_y, width, height, rotation, z_index, stickerId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updateSticker error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// DELETE /api/scrapbook/stickers/:stickerId
+// Remove a sticker
+exports.deleteSticker = async (req, res) => {
+  try {
+    const { stickerId } = req.params;
+
+    // Verify ownership
+    const ownership = await db.query(
+      `SELECT dl.user_id FROM log_stickers ls
+       JOIN day_logs dl ON ls.log_id = dl.id
+       WHERE ls.id = $1`,
+      [stickerId]
+    );
+
+    if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    await db.query('DELETE FROM log_stickers WHERE id = $1', [stickerId]);
+    res.json({ message: 'Sticker deleted' });
+  } catch (err) {
+    console.error('deleteSticker error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 };

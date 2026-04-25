@@ -15,4 +15,14 @@ app.use('/api/scrapbook', scrapbookRoutes);
 // http://localhost:5000/uploads/photo-123.jpg
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Fallback to index.html for any unmatched routes (for client-side routing)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

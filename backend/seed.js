@@ -15,17 +15,20 @@ const prompts = [
   { text: 'What is one thing you are grateful for that you usually overlook?', category: 'gratitude' },
   { text: 'What challenged you today, and how did you respond?', category: 'growth' },
   { text: 'If you could add one extra hour to today, how would you use it?', category: 'fun' },
+  { text: 'When did today feel most peaceful?', category: 'short' },
+  { text: 'What question did today make you ask yourself?', category: 'reflective' },
+  { text: 'If today had a color, what would it be?', category: 'creative' },
 ];
 
 const assets = [
-  { name: 'Golden Star',    file: 'assets/stickers/star.png',       reward: false },
-  { name: 'Red Heart',      file: 'assets/stickers/heart.png',      reward: false },
-  { name: 'Rainbow',        file: 'assets/stickers/rainbow.png',    reward: false },
-  { name: 'Sun',            file: 'assets/stickers/sun.png',        reward: false },
-  { name: 'Moon',           file: 'assets/stickers/moon.png',       reward: false },
-  { name: 'Fire',           file: 'assets/stickers/fire.png',       reward: false },
-  { name: 'Confetti Crown', file: 'assets/stickers/crown.png',      reward: true  },
-  { name: 'Trophy',         file: 'assets/stickers/trophy.png',     reward: true  },
+  { name: 'Golden Star',    file: 'assets/stickers/star.png',       category: 'reward', reward: false },
+  { name: 'Red Heart',      file: 'assets/stickers/heart.png',      category: 'reward', reward: false },
+  { name: 'Rainbow',        file: 'assets/stickers/rainbow.png',    category: 'reward', reward: false },
+  { name: 'Sun',            file: 'assets/stickers/sun.png',        category: 'reward', reward: false },
+  { name: 'Moon',           file: 'assets/stickers/moon.png',       category: 'reward', reward: false },
+  { name: 'Fire',           file: 'assets/stickers/fire.png',       category: 'reward', reward: false },
+  { name: 'Confetti Crown', file: 'assets/stickers/crown.png',      category: 'reward', reward: true  },
+  { name: 'Trophy',         file: 'assets/stickers/trophy.png',     category: 'reward', reward: true  },
 ];
 
 async function seed() {
@@ -33,8 +36,7 @@ async function seed() {
 
   for (const p of prompts) {
     await db.query(
-      `INSERT INTO reflective_prompts (prompt_text, category)`,
-      ` VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO reflective_prompts (prompt_text, category) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [p.text, p.category]
     );
   }
@@ -42,9 +44,8 @@ async function seed() {
 
   for (const a of assets) {
     await db.query(
-      `INSERT INTO art_assets (name, file_path, category, is_achievement_reward)`,
-      ` VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-      [a.name, a.file, a.cat, a.reward]
+      `INSERT INTO art_assets (name, file_path, is_achievement_reward) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      [a.name, a.file, a.reward]
     );
   }
   console.log(`Inserted ${assets.length} art assets.`);
