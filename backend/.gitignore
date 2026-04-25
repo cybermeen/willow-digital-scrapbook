@@ -1,0 +1,14 @@
+# 1. THE BIG ONE: Never upload the library folder
+node_modules/
+
+# 2. THE SECRET ONE: Your DB password stays on your PC
+.env
+.env.local
+
+# 3. THE SYSTEM ONES: Windows/Mac "junk" files
+.DS_Store
+Thumbs.db
+
+# 4. THE DATA ONES: Don't pull your teammate's test photos
+uploads/
+*.log

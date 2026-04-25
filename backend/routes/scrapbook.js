@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const ctrl = require('../services/scrapbookServices');
+const ctrl = require('../services/scrapbookService');
 const auth = require('../auth/auth');  
 const upload = require('../uploads/upload');
 

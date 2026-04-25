@@ -1,32 +1,25 @@
 CREATE TABLE IF NOT EXISTS users (
-
-  user_id     INTEGER PRIMARY KEY,	
-  display_name   VARCHAR(50),
-  email          VARCHAR(50),
-  password_hash  VARCHAR(50)
-  
-)
+    user_id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    display_name VARCHAR(100),
+    is_first_login BOOLEAN DEFAULT TRUE, -- Your Onboarding Flag
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 CREATE TABLE IF NOT EXISTS day_logs (
 
-  -- Primary key: auto-incrementing unique ID for each log
   id          SERIAL PRIMARY KEY,
 
-  -- REFERENCES users(id) creates a foreign key constraint:
-  -- ON DELETE CASCADE ensures if the user account is 
-  -- deleted, all their logs are deleted too.
+  -- ON DELETE CASCADE ensures if the user account is deleted, all their logs are deleted too
   user_id     INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-
- 
   log_date    DATE NOT NULL,
-
   -- A layout style chosen by the user (e.g. 'grid', 'freeform')
   layout_style VARCHAR(50) DEFAULT 'freeform',
 
   -- Whether completing all tasks today unlocked the 'achievement' sticker
   achievement_unlocked BOOLEAN DEFAULT false,
-
-  -- Timestamps for record-keeping
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW(),
 
@@ -43,11 +36,7 @@ CREATE TABLE IF NOT EXISTS log_photos (
 
   -- Original filename the user uploaded 
   original_name VARCHAR(255),
-
-  -- File size in bytes (for storage management)
-  file_size   INTEGER,
-
-  -- Caption the user typed for the photo
+  file_size   INTEGER,  -- in bytes
   caption     TEXT,
 
   -- Position on the scrapbook canvas (for layout persistence)
@@ -65,8 +54,6 @@ CREATE TABLE IF NOT EXISTS log_photos (
 CREATE TABLE IF NOT EXISTS log_notes (
   id          SERIAL PRIMARY KEY,
   log_id      INTEGER NOT NULL REFERENCES day_logs(id) ON DELETE CASCADE,
-
-  -- The actual text content of the note
   content     TEXT NOT NULL,
 
   -- Position on the canvas (same idea as photos)
@@ -76,7 +63,6 @@ CREATE TABLE IF NOT EXISTS log_notes (
   rotation    FLOAT DEFAULT 0,
   z_index     INTEGER DEFAULT 0,
   
-  -- Visual styling choices
   bg_color    VARCHAR(20) DEFAULT '#FFFDE7',
   font_size   INTEGER DEFAULT 14,
 
@@ -85,7 +71,6 @@ CREATE TABLE IF NOT EXISTS log_notes (
 
 CREATE TABLE IF NOT EXISTS reflective_prompts (
   id          SERIAL PRIMARY KEY,
-
   prompt_text TEXT NOT NULL,
 
   -- Themes e.g: 'general', 'gratitude', 'growth', 'fun'
@@ -101,7 +86,6 @@ CREATE TABLE IF NOT EXISTS prompt_answers (
   id          SERIAL PRIMARY KEY,
   log_id      INTEGER NOT NULL REFERENCES day_logs(id) ON DELETE CASCADE,
   prompt_id   INTEGER NOT NULL REFERENCES reflective_prompts(id),
-
   answer_text TEXT NOT NULL,
 
   -- Position on canvas
@@ -114,8 +98,6 @@ CREATE TABLE IF NOT EXISTS prompt_answers (
 
 CREATE TABLE IF NOT EXISTS art_assets (
   id          SERIAL PRIMARY KEY,
-
-  -- Display name (e.g. 'Golden Star', 'Red Heart')
   name        VARCHAR(100) NOT NULL,
 
   -- File path on the server (e.g. 'assets/stickers/star.png')
@@ -123,7 +105,6 @@ CREATE TABLE IF NOT EXISTS art_assets (
 
   -- If true, asset is only unlocked when all tasks are completed
   is_achievement_reward BOOLEAN DEFAULT false,
-
   is_active   BOOLEAN DEFAULT true,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -143,6 +124,24 @@ CREATE TABLE IF NOT EXISTS log_stickers (
 
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-----------------------------
+-- TASKS FEATURE --
+------------------------------
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,    
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date TIMESTAMP NOT NULL,
+    priority VARCHAR(20) DEFAULT 'Medium', 
+    status VARCHAR(20) DEFAULT 'pending', -- 'pending' or 'completed'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+
 
 
 
