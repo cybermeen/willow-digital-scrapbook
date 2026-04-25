@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willow - Daily Scrapbook</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header/Navigation -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <h1>Willow</h1>
+            </div>
+            <nav class="nav-tabs">
+                <a href="#" data-page="dashboard" class="nav-tab active">Today</a>
+                <a href="#" data-page="daylog" class="nav-tab">Day Log</a>
+                <a href="#" data-page="todo" class="nav-tab">To-Dos</a>
+                <a href="#" data-page="scrapbook" class="nav-tab">Scrapbook</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        
+        <!-- ===== DASHBOARD PAGE ===== -->
+        <section id="dashboard-page" class="page active">
+            <div class="dashboard-container">
+                
+                <!-- Left Column: Tasks -->
+                <div class="dashboard-left">
+                    <div class="section-box">
+                        <h2 class="section-title">Tasks for Today</h2>
+                        <div id="tasks-for-today" class="tasks-list">
+                            <p class="empty-state">No tasks yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Challenges & Inputs -->
+                <div class="dashboard-right">
+                    <div class="section-box">
+                        <h2 class="section-title">Photo Challenge of the day</h2>
+                        <div class="challenge-display" id="daily-challenge">
+                            <p class="challenge-text">Capture a quiet moment...</p>
+                        </div>
+                        <button id="capture-challenge-btn" class="btn btn-primary btn-large">Capture a quiet moment...</button>
+                    </div>
+
+                    <div class="section-box">
+                        <h2 class="section-title">3 highlights of the day</h2>
+                        <textarea id="highlights-input" placeholder="What made you smile today?" class="input-large"></textarea>
+                    </div>
+
+                    <div class="section-box">
+                        <h2 class="section-title">Theme for the day</h2>
+                        <textarea id="theme-input" placeholder="What's today's theme?" class="input-large"></textarea>
+                    </div>
+
+                    <button id="add-to-scrapbook-btn" class="btn btn-primary btn-large btn-center">Add to Scrapbook</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== DAY LOG PAGE ===== -->
+        <section id="daylog-page" class="page">
+            <div class="daylog-container">
+                
+                <!-- Left Panel: Form -->
+                <div class="daylog-form-panel">
+                    <div class="panel-box">
+                        <h2>Create Today's Log</h2>
+                        
+                        <div class="form-group">
+                            <label>Choose prompt type:</label>
+                            <select id="prompt-type-select" class="input-field">
+                                <option value="short">Short and sweet</option>
+                                <option value="reflective">Reflective</option>
+                                <option value="creative">Creative</option>
+                                <option value="gratitude">Gratitude</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Today's prompt:</label>
+                            <div id="prompt-display" class="prompt-box">
+                                <p id="prompt-text">Loading prompt...</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <textarea id="prompt-answer" placeholder="Write your answer here..." class="input-large"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Add:</label>
+                            <div class="add-buttons">
+                                <button id="add-image-btn" class="btn btn-secondary">Image</button>
+                                <button id="add-video-btn" class="btn btn-secondary">Video</button>
+                                <button id="add-audio-btn" class="btn btn-secondary">Audio</button>
+                            </div>
+                            <input type="file" id="image-input" accept="image/*" style="display: none;">
+                            <input type="file" id="video-input" accept="video/*" style="display: none;">
+                            <input type="file" id="audio-input" accept="audio/*" style="display: none;">
+                        </div>
+
+                        <button id="open-magic-library-btn" class="btn btn-secondary btn-block">Open Magic Library</button>
+
+                        <div class="form-actions">
+                            <button id="reset-log-btn" class="btn btn-secondary">Reset</button>
+                            <button id="save-log-btn" class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Preview -->
+                <div class="daylog-preview-panel">
+                    <div class="panel-box preview-box">
+                        <div class="preview-date">
+                            <span id="preview-day-name">Sunday</span>
+                            <span id="preview-date">22nd February 2026</span>
+                        </div>
+                        <div id="preview-content" class="preview-content">
+                            <p class="empty-state">Preview will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SCRAPBOOK PAGE ===== -->
+        <section id="scrapbook-page" class="page">
+            <div class="scrapbook-container">
+                <div class="scrapbook-header">
+                    <h2>Your Scrapbook</h2>
+                    <button id="share-btn" class="btn btn-secondary">Share</button>
+                </div>
+
+                <div class="scrapbook-gallery">
+                    <button class="nav-arrow left" id="scroll-left">&lt;</button>
+                    
+                    <div id="scrapbook-cards" class="cards-container">
+                        <p class="empty-state">No scrapbook entries yet. Create one!</p>
+                    </div>
+
+                    <button class="nav-arrow right" id="scroll-right">&gt;</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification hidden"></div>
+
+    <!-- Scripts -->
+    <script src="api.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="daylog.js"></script>
+    <script src="scrapbook.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
