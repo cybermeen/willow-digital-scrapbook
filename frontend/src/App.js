@@ -3,7 +3,7 @@ import Login from './Login';
 import Signup from './Signup';
 import Dashboard from './Dashboard';
 
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = '/api/auth';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('loading');
