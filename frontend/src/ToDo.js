@@ -5,114 +5,47 @@ const API_URL = '/api/todo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr) {
+function formatDueDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function priorityColor(priority) {
-  if (!priority) return '#c0cfc0';
-  switch (priority.toLowerCase()) {
-    case 'high':   return '#c0392b';
-    case 'medium': return '#e67e22';
-    case 'low':    return '#27ae60';
-    default:       return '#c0cfc0';
+function formatCompletedAt(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function toInputDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toISOString().split('T')[0];
+}
+
+function priorityStyle(priority) {
+  switch ((priority || '').toLowerCase()) {
+    case 'high':   return { bg: '#fdecea', color: '#c0392b' };
+    case 'medium': return { bg: '#fef3e2', color: '#d4820a' };
+    case 'low':    return { bg: '#eaf6ee', color: '#27ae60' };
+    default:       return { bg: '#f0f0f0', color: '#999' };
   }
 }
 
-// ─── Task Card ────────────────────────────────────────────────────────────────
-
-function TaskCard({ task, onToggle, onDelete, onEdit }) {
-  const [deleting, setDeleting] = useState(false);
-  const [toggling, setToggling] = useState(false);
-
-  const handleToggle = async () => {
-    setToggling(true);
-    await onToggle(task.id);
-    setToggling(false);
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    await onDelete(task.id);
-  };
-
-  return (
-    <div className={`task-card ${task.status === 'completed' ? 'task-card--completed' : ''}`}>
-      <button
-        className={`task-check ${toggling ? 'task-check--loading' : ''} ${task.status === 'completed' ? 'task-check--done' : ''}`}
-        onClick={handleToggle}
-        title={task.status === 'completed' ? 'Mark as pending' : 'Mark as complete'}
-        disabled={toggling}
-      >
-        {task.status === 'completed' ? '✓' : ''}
-      </button>
-
-      <div className="task-body">
-        <span className="task-title">{task.title}</span>
-        {task.due_date && (
-          <span className="task-due">Due {formatDate(task.due_date)}</span>
-        )}
-      </div>
-
-      <div className="task-meta">
-        {task.priority && (
-          <span
-            className="task-priority"
-            style={{ background: priorityColor(task.priority) + '22', color: priorityColor(task.priority) }}
-          >
-            {task.priority}
-          </span>
-        )}
-        <button className="task-action task-action--edit" onClick={() => onEdit(task)} title="Edit task">✏️</button>
-        <button className="task-action task-action--delete" onClick={handleDelete} disabled={deleting} title="Delete task">
-          {deleting ? '…' : '🗑'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Column ───────────────────────────────────────────────────────────────────
-
-function TaskColumn({ title, emoji, tasks, onToggle, onDelete, onEdit }) {
-  return (
-    <div className="task-column">
-      <div className="column-header">
-        <span className="column-emoji">{emoji}</span>
-        <h3 className="column-title">{title}</h3>
-        <span className="column-count">{tasks.length}</span>
-      </div>
-      <div className="column-body">
-        {tasks.length === 0 ? (
-          <p className="column-empty">No tasks yet</p>
-        ) : (
-          tasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              onEdit={onEdit}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Add / Edit Modal ─────────────────────────────────────────────────────────
+// ─── Task Modal (Add / Edit) ──────────────────────────────────────────────────
 
 function TaskModal({ mode, task, onClose, onSave }) {
-  const [title, setTitle] = useState(task?.title || '');
-  const [dueDate, setDueDate] = useState(
-    task?.due_date ? task.due_date.split('T')[0] : ''
-  );
+  const [title, setTitle]       = useState(task?.title || '');
+  const [dueDate, setDueDate]   = useState(task?.due_date ? toInputDate(task.due_date) : '');
   const [priority, setPriority] = useState(task?.priority || 'Medium');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,17 +59,15 @@ function TaskModal({ mode, task, onClose, onSave }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className="modal" role="dialog" aria-modal="true">
         <div className="modal-header">
           <h3>{mode === 'add' ? 'Add New Task' : 'Edit Task'}</h3>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="modal-field">
-            <label htmlFor="task-title">
-              Task Title <span className="required">*</span>
-            </label>
+            <label htmlFor="task-title">Task Title <span className="required">*</span></label>
             <input
               id="task-title"
               type="text"
@@ -148,9 +79,7 @@ function TaskModal({ mode, task, onClose, onSave }) {
           </div>
 
           <div className="modal-field">
-            <label htmlFor="task-due">
-              Due Date <span className="required">*</span>
-            </label>
+            <label htmlFor="task-due">Due Date <span className="required">*</span></label>
             <input
               id="task-due"
               type="date"
@@ -161,37 +90,21 @@ function TaskModal({ mode, task, onClose, onSave }) {
 
           <div className="modal-field">
             <label htmlFor="task-priority">Priority</label>
-            <select
-              id="task-priority"
-              value={priority}
-              onChange={e => setPriority(e.target.value)}
-            >
+            <select id="task-priority" value={priority} onChange={e => setPriority(e.target.value)}>
               <option value="High">High</option>
               <option value="Medium">Medium</option>
               <option value="Low">Low</option>
             </select>
           </div>
 
-          {error && <div className="modal-error">{error}</div>}
-
-          {/* NOTE: Edit functionality requires a PUT /api/todo/:id endpoint
-              to be added to the backend before it will work. */}
-          {mode === 'edit' && (
-            <p className="modal-notice">
-              ⚠️ Edit requires a backend endpoint — coming soon.
-            </p>
-          )}
+          {error && <div className="modal-error" role="alert">{error}</div>}
 
           <div className="modal-actions">
             <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button
-              type="submit"
-              className="btn-save"
-              disabled={loading || mode === 'edit'}
-            >
+            <button type="submit" className="btn-save" disabled={loading}>
               {loading
-                ? <span className="btn-loading"><span className="spinner-dark" />Saving…</span>
-                : mode === 'add' ? '+ Add Task' : 'Save Task'}
+                ? <span className="btn-loading"><span className="spinner" /> Saving…</span>
+                : mode === 'add' ? '+ Add Task' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -200,22 +113,172 @@ function TaskModal({ mode, task, onClose, onSave }) {
   );
 }
 
-// ─── Main ToDo Component ──────────────────────────────────────────────────────
+// ─── Task Card ────────────────────────────────────────────────────────────────
+
+function TaskCard({ task, onToggle, onDelete, onEdit }) {
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const ps = priorityStyle(task.priority);
+
+  const handleToggle = async (e) => {
+    e.stopPropagation();
+    setToggling(true);
+    await onToggle(task.id);
+    setToggling(false);
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${task.title}"?`)) return;
+    setDeleting(true);
+    await onDelete(task.id);
+  };
+
+  return (
+    <div
+      className={`task-card ${deleting ? 'task-card--deleting' : ''}`}
+      onClick={() => onEdit(task)}
+      title="Click to edit"
+    >
+      {/* Checkbox */}
+      <button
+        className={`task-check ${toggling ? 'task-check--loading' : ''} ${task.status === 'completed' ? 'task-check--done' : ''}`}
+        onClick={handleToggle}
+        disabled={toggling}
+        aria-label={task.status === 'completed' ? 'Mark as pending' : 'Mark as complete'}
+      >
+        {task.status === 'completed' && '✓'}
+      </button>
+
+      {/* Text */}
+      <div className="task-body">
+        <span className="task-title">{task.title}</span>
+        {task.due_date && (
+          <span className="task-due">📅 {formatDueDate(task.due_date)}</span>
+        )}
+      </div>
+
+      {/* Priority badge */}
+      {task.priority && (
+        <span
+          className="task-priority"
+          style={{ background: ps.bg, color: ps.color }}
+        >
+          {task.priority}
+        </span>
+      )}
+
+      {/* Delete */}
+      <button
+        className="task-delete"
+        onClick={handleDelete}
+        disabled={deleting}
+        aria-label="Delete task"
+      >
+        {deleting ? '…' : '✕'}
+      </button>
+    </div>
+  );
+}
+
+// ─── Column ───────────────────────────────────────────────────────────────────
+
+function TaskColumn({ title, emoji, tasks, onToggle, onDelete, onEdit }) {
+  return (
+    <div className="task-column">
+      <div className="column-header">
+        <span>{emoji}</span>
+        <h3 className="column-title">{title}</h3>
+        {tasks.length > 0 && <span className="column-count">{tasks.length}</span>}
+      </div>
+      <div className="column-body">
+        {tasks.length === 0
+          ? <p className="column-empty">No tasks yet</p>
+          : tasks.map(t => (
+              <TaskCard
+                key={t.id}
+                task={t}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                onEdit={onEdit}
+              />
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// ─── Completed Section ────────────────────────────────────────────────────────
+
+function CompletedSection({ tasks, onToggle, onDelete }) {
+  return (
+    <div className="completed-section">
+      <h2 className="completed-title">Completed Tasks ✨</h2>
+
+      {tasks.length === 0 ? (
+        <p className="completed-empty">
+          You have 0 recently completed tasks. Complete a task to see it here!
+        </p>
+      ) : (
+        <>
+          <p className="completed-subtitle">
+            Showing your {tasks.length} most recently completed task{tasks.length !== 1 ? 's' : ''}
+          </p>
+          <div className="completed-list">
+            {tasks.map(task => {
+              const ps = priorityStyle(task.priority);
+              return (
+                <div key={task.id} className="completed-card">
+                  <button
+                    className="task-check task-check--done"
+                    onClick={() => onToggle(task.id)}
+                    aria-label="Mark as pending"
+                  >✓</button>
+
+                  <div className="task-body">
+                    <span className="task-title task-title--done">{task.title}</span>
+                    <span className="task-due completed-at">
+                      ✅ Completed {formatCompletedAt(task.completed_at)}
+                    </span>
+                  </div>
+
+                  {task.priority && (
+                    <span className="task-priority" style={{ background: ps.bg, color: ps.color }}>
+                      {task.priority}
+                    </span>
+                  )}
+
+                  <button
+                    className="task-delete"
+                    onClick={() => onDelete(task.id)}
+                    aria-label="Delete task"
+                  >✕</button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 function ToDo() {
-  const [tasks, setTasks] = useState({ today: [], thisWeek: [], upcoming: [], completed: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editTask, setEditTask] = useState(null); // null = add mode, task object = edit mode
+  const [tasks, setTasks]       = useState({ today: [], thisWeek: [], upcoming: [], completed: [] });
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
+  const [modal, setModal]       = useState(null); // null | { mode: 'add' } | { mode: 'edit', task }
 
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchTasks = useCallback(async () => {
     try {
       const res = await fetch(API_URL, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch tasks');
-      const data = await res.json();
-      setTasks(data);
-    } catch (err) {
+      if (!res.ok) throw new Error('Failed to fetch');
+      setTasks(await res.json());
+    } catch {
       setError('Could not load tasks. Is the server running?');
     } finally {
       setLoading(false);
@@ -224,8 +287,8 @@ function ToDo() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  // ── Create ──────────────────────────────────────────────────────────────────
-  const handleAddTask = async ({ title, due_date, priority }) => {
+  // ── Create ────────────────────────────────────────────────────────────────
+  const handleAdd = async ({ title, due_date, priority }) => {
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
@@ -233,50 +296,65 @@ function ToDo() {
         credentials: 'include',
         body: JSON.stringify({ title, due_date, priority }),
       });
-      if (!res.ok) throw new Error('Failed to create task');
-      setShowModal(false);
+      if (!res.ok) throw new Error();
+      setModal(null);
       await fetchTasks();
-    } catch (err) {
+    } catch {
       setError('Could not create task.');
     }
   };
 
-  // ── Toggle ──────────────────────────────────────────────────────────────────
-  const handleToggle = async (taskId) => {
+  // ── Edit ──────────────────────────────────────────────────────────────────
+  const handleEdit = async ({ title, due_date, priority }) => {
     try {
-      const res = await fetch(`${API_URL}/${taskId}/toggle`, {
-        method: 'PATCH',
+      const res = await fetch(`${API_URL}/${modal.task.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ title, due_date, priority }),
       });
-      if (!res.ok) throw new Error('Failed to toggle task');
+      if (!res.ok) throw new Error();
+      setModal(null);
       await fetchTasks();
-    } catch (err) {
+    } catch {
       setError('Could not update task.');
     }
   };
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
-  const handleDelete = async (taskId) => {
+  // ── Toggle ────────────────────────────────────────────────────────────────
+  const handleToggle = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/${taskId}`, {
+      const res = await fetch(`${API_URL}/${id}/toggle`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error();
+      await fetchTasks();
+    } catch {
+      setError('Could not update task.');
+    }
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
-      if (!res.ok) throw new Error('Failed to delete task');
+      if (!res.ok) throw new Error();
       await fetchTasks();
-    } catch (err) {
+    } catch {
       setError('Could not delete task.');
     }
   };
 
-  // ── Edit (opens modal, saving requires backend endpoint) ────────────────────
-  const handleEdit = (task) => { setEditTask(task); };
-  const handleCloseModal = () => { setShowModal(false); setEditTask(null); };
-
   const today = new Date();
-  const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateLabel = today.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
 
-  const totalActive = tasks.today.length + tasks.thisWeek.length + tasks.upcoming.length;
+  const activeCount = tasks.today.length + tasks.thisWeek.length + tasks.upcoming.length;
 
   if (loading) {
     return (
@@ -289,70 +367,65 @@ function ToDo() {
 
   return (
     <div className="todo">
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="todo-header">
         <div>
           <h1 className="todo-title">To-Do List</h1>
           <p className="todo-date">{dateLabel} 🌸</p>
         </div>
-        {totalActive > 0 && (
-          <p className="todo-summary">{totalActive} task{totalActive !== 1 ? 's' : ''} remaining</p>
+        {activeCount > 0 && (
+          <span className="todo-summary">
+            {activeCount} task{activeCount !== 1 ? 's' : ''} remaining
+          </span>
         )}
       </div>
 
       {error && (
         <div className="todo-error" role="alert">
           {error}
-          <button onClick={() => setError('')}>✕</button>
+          <button onClick={() => setError('')} aria-label="Dismiss">✕</button>
         </div>
       )}
 
-      {/* ── Three Columns ───────────────────────────────────────────────── */}
+      {/* ── Three columns ──────────────────────────────────────────────── */}
       <div className="todo-columns">
-        <TaskColumn
-          title="Today"     emoji="☀️"
+        <TaskColumn emoji="☀️" title="Today"
           tasks={tasks.today}
-          onToggle={handleToggle} onDelete={handleDelete} onEdit={handleEdit}
+          onToggle={handleToggle} onDelete={handleDelete}
+          onEdit={(task) => setModal({ mode: 'edit', task })}
         />
-        <TaskColumn
-          title="This Week" emoji="📅"
+        <TaskColumn emoji="📅" title="This Week"
           tasks={tasks.thisWeek}
-          onToggle={handleToggle} onDelete={handleDelete} onEdit={handleEdit}
+          onToggle={handleToggle} onDelete={handleDelete}
+          onEdit={(task) => setModal({ mode: 'edit', task })}
         />
-        <TaskColumn
-          title="Upcoming"  emoji="🔮"
+        <TaskColumn emoji="🔮" title="Upcoming"
           tasks={tasks.upcoming}
-          onToggle={handleToggle} onDelete={handleDelete} onEdit={handleEdit}
+          onToggle={handleToggle} onDelete={handleDelete}
+          onEdit={(task) => setModal({ mode: 'edit', task })}
         />
       </div>
 
-      {/* ── Completed Section ────────────────────────────────────────────── */}
-      {tasks.completed.length > 0 && (
-        <div className="completed-section">
-          <h2 className="completed-title">Completed Tasks ✨</h2>
-          <div className="completed-grid">
-            {tasks.completed.map(task => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Completed ──────────────────────────────────────────────────── */}
+      <CompletedSection
+        tasks={tasks.completed}
+        onToggle={handleToggle}
+        onDelete={handleDelete}
+      />
 
-      {/* ── Floating Add Button ──────────────────────────────────────────── */}
-      <button className="fab" onClick={() => setShowModal(true)} title="Add new task">+</button>
+      {/* ── FAB ────────────────────────────────────────────────────────── */}
+      <button className="fab" onClick={() => setModal({ mode: 'add' })} aria-label="Add new task">
+        +
+      </button>
 
-      {/* ── Modals ──────────────────────────────────────────────────────── */}
-      {showModal && (
-        <TaskModal mode="add" task={null} onClose={handleCloseModal} onSave={handleAddTask} />
-      )}
-      {editTask && (
-        <TaskModal mode="edit" task={editTask} onClose={handleCloseModal} onSave={() => {}} />
+      {/* ── Modal ──────────────────────────────────────────────────────── */}
+      {modal && (
+        <TaskModal
+          mode={modal.mode}
+          task={modal.task || null}
+          onClose={() => setModal(null)}
+          onSave={modal.mode === 'add' ? handleAdd : handleEdit}
+        />
       )}
     </div>
   );
