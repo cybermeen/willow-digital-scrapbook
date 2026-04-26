@@ -10,5 +10,5 @@ node_modules/
 Thumbs.db
 
 # 4. THE DATA ONES: Don't pull your teammate's test photos
-uploads/
+#uploads/
 *.log

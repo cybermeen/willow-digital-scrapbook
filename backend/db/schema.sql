@@ -51,6 +51,34 @@ CREATE TABLE IF NOT EXISTS log_photos (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS log_videos (
+  id            SERIAL PRIMARY KEY,
+  log_id        INTEGER NOT NULL REFERENCES day_logs(id) ON DELETE CASCADE,
+  file_path     VARCHAR(500) NOT NULL,
+  original_name VARCHAR(255),
+  file_size     INTEGER,
+  caption       TEXT,
+  pos_x         FLOAT DEFAULT 0,
+  pos_y         FLOAT DEFAULT 0,
+  width         FLOAT DEFAULT 320,
+  height        FLOAT DEFAULT 180,
+  z_index       INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS log_audio (
+  id            SERIAL PRIMARY KEY,
+  log_id        INTEGER NOT NULL REFERENCES day_logs(id) ON DELETE CASCADE,
+  file_path     VARCHAR(500) NOT NULL,
+  original_name VARCHAR(255),
+  file_size     INTEGER,
+  caption       TEXT,
+  pos_x         FLOAT DEFAULT 0,
+  pos_y         FLOAT DEFAULT 0,
+  z_index       INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS log_notes (
   id          SERIAL PRIMARY KEY,
   log_id      INTEGER NOT NULL REFERENCES day_logs(id) ON DELETE CASCADE,

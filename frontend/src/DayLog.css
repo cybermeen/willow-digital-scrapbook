@@ -582,3 +582,93 @@
   line-height: 1.6;
   max-width: 260px;
 }
+
+/* ── Append these to the bottom of your existing DayLog.css ── */
+
+/* Video canvas item */
+.dl-canvas-item--video {
+  width: 320px;
+}
+
+.dl-video-wrap {
+  background: #1a1a2e;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e8ede8;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.dl-video-player {
+  width: 100%;
+  max-width: 316px;
+  display: block;
+  border-radius: 8px 8px 0 0;
+  background: #000;
+}
+
+/* Audio canvas item */
+.dl-canvas-item--audio {
+  width: 300px;
+}
+
+.dl-audio-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #e0e8e0;
+  padding: 0.75rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.dl-audio-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dl-audio-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.dl-audio-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3d5c3d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.dl-audio-player {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  accent-color: #5c7a5c;
+}
+
+/* Shared media label */
+.dl-media-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  color: #a0b0a0;
+  background: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-media-size {
+  font-size: 0.7rem;
+  color: #7a8c7a;
+  background: #eaf3ea;
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
