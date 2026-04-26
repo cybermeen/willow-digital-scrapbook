@@ -8,6 +8,14 @@ const PORT = process.env.PORT || 3000;
 // allows the server to read the JSON sent in Postman
 app.use(express.json()); 
 
+
+// CORS — allow the React dev server to send cookies
+const cors = require('cors');
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
+
 // SESSION CONFIGURATION
 app.use(session({
   secret: process.env.SESSION_SECRET || 'iba_secret_key', 

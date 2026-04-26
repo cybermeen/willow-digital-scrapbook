@@ -5,6 +5,7 @@ const authService = require('../services/authService');
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     try {
+        console.log('DEBUG - Register payload:', req.body);
         const { email, password, displayName } = req.body;
 
         // Validation 
@@ -20,21 +21,26 @@ router.post('/register', async (req, res) => {
 
         res.status(201).json({
             message: "User registered successfully",
-            user: newUser // Contains is_first_login: true
+            user: {
+                id: newUser.user_id,
+                email: newUser.email,
+                displayName: newUser.display_name,
+                isFirstLogin: newUser.is_first_login
+            }
         });
     } catch (error) {
-    
-    console.error("DEBUG - Registration Crash:", error); 
+        console.error("DEBUG - Registration Crash:", error.stack || error);
 
-    if (error.code === '23505') {
-        return res.status(400).json({ message: "Email already exists." });
+        if (error.code === '23505') {
+            return res.status(400).json({ message: "Email already exists." });
+        }
+
+        res.status(500).json({
+            message: "Server error during registration.",
+            detail: error.message,
+            code: error.code || null
+        });
     }
-    // Return the real error message to Postman
-    res.status(500).json({ 
-        message: "Server error during registration.",
-        detail: error.message 
-    });
-}
 });
 
 // POST /api/auth/login
@@ -63,6 +69,34 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: "Server error during login." });
     }
 });
+
+// GET /api/auth/me — Check if session is still valid (called on app load)
+router.get('/me', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: 'No active session' });
+    }
+    try {
+        const db = require('../db/db');
+        const result = await db.query(
+            'SELECT user_id, email, display_name FROM users WHERE user_id = $1',
+            [req.session.userId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(401).json({ message: 'User not found' });
+        }
+        const u = result.rows[0];
+        res.json({
+            user: {
+                id: u.user_id,
+                email: u.email,
+                displayName: u.display_name,
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {

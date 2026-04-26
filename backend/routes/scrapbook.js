@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../services/scrapbookService');
 const auth = require('../auth/auth');  
-const upload = require('../uploads/upload');
+const upload = require('../../uploads/upload');
 
 // Apply auth middleware to ALL routes in this file.
 // If a user is not logged in, they get a 401 error before reaching any of the route handlers below.
