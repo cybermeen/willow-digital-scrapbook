@@ -5,13 +5,13 @@ const saltRounds = 10;
 const authService = {
     // hashPassword(password: string)
     async register(email, password, displayName) {
-        const hash = await bcrypt.hash(password, saltRounds);
+        const hash = await bcrypt.hash(String(password), saltRounds);
         const query = `
             INSERT INTO users (email, password_hash, display_name, is_first_login)
             VALUES ($1, $2, $3, true)
             RETURNING user_id, email, display_name, is_first_login
         `;
-        const { rows } = await db.query(query, [email, hash, displayName]);
+        const { rows } = await db.query(query, [email, hash, displayName || null]);
         return rows[0];
     },
 
