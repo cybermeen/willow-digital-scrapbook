@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Rnd } from 'react-rnd';
 import './DayLog.css';
 
 const API = '/api/scrapbook';
@@ -35,7 +36,7 @@ function StampPhoto({ src, alt, style }) {
   return (
     <div className="stamp-photo" style={style}>
       <img src={src} alt={alt || 'log photo'} />
-    </div>
+      </div>
   );
 }
 
@@ -44,6 +45,18 @@ function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+// ── Shared Rnd style ───────────────────────────────────────────────────────
+// No position:absolute on the inner child — Rnd handles all positioning.
+const RND_HANDLE_STYLES = {
+  topLeft:     { width: 12, height: 12, left: -6,  top: -6,  background: '#fff', border: '2px solid #aad4e8', borderRadius: '50%', zIndex: 20 },
+  topRight:    { width: 12, height: 12, right: -6, top: -6,  background: '#fff', border: '2px solid #aad4e8', borderRadius: '50%', zIndex: 20 },
+  bottomLeft:  { width: 12, height: 12, left: -6,  bottom: -6, background: '#fff', border: '2px solid #aad4e8', borderRadius: '50%', zIndex: 20 },
+  bottomRight: { width: 12, height: 12, right: -6, bottom: -6, background: '#fff', border: '2px solid #aad4e8', borderRadius: '50%', zIndex: 20 },
+};
+
+const ENABLE_CORNERS = { topLeft: true, topRight: true, bottomLeft: true, bottomRight: true };
+
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
@@ -85,6 +98,9 @@ export default function DayLog({ user }) {
   // Save state
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
+
+  // Track which item is being hovered (to show handles)
+  const [hoveredId, setHoveredId] = useState(null);
 
   // ── Load today's log ────────────────────────────────────────────────────
 
@@ -469,6 +485,7 @@ export default function DayLog({ user }) {
             <span>{display.ordinal} {display.month} {display.year}</span>
           </div>
 
+
           {/* Photos */}
           {photos.map((photo, i) => (
             <div key={photo.id} className="dl-canvas-item" style={{
@@ -540,6 +557,168 @@ export default function DayLog({ user }) {
               </div>
             </div>
           )}
+
+          {/* Uploaded photos as stamps */}
+          {photos.map((photo, i) => {
+            // Rendered in LogPage for drag/resize, but could also show a static preview here if desired
+            const isHovered = hoveredId === `photo-${photo.id}`;
+            return (
+              <Rnd
+                key={photo.id}
+                size={{ width: photo.width || 200, height: photo.height || 200 }}
+                position={{ x: photo.pos_x || 30, y: photo.pos_y || 40 }}
+                onDragStop={(e, d) => {
+                  setPhotos(prev => prev.map((p, idx) =>
+                    idx === i ? { ...p, pos_x: d.x, pos_y: d.y } : p
+                  ));
+                  setSaved(false);
+                }}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setPhotos(prev => prev.map((p, idx) =>
+                    idx === i ? {
+                      ...p,
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                      pos_x: position.x,
+                      pos_y: position.y,
+                    } : p
+                  ));
+                  setSaved(false);
+                }}
+                bounds="parent"
+                enableResizing={ENABLE_CORNERS}
+                resizeHandleStyles={RND_HANDLE_STYLES}
+                // Only show handles on hover via inline style toggle
+                resizeHandleComponent={isHovered ? undefined : {
+                  topLeft: <div style={{ display: 'none' }} />,
+                  topRight: <div style={{ display: 'none' }} />,
+                  bottomLeft: <div style={{ display: 'none' }} />,
+                  bottomRight: <div style={{ display: 'none' }} />,
+                }}
+                minWidth={80}
+                minHeight={80}
+                style={{ cursor: 'move' }}
+              >
+                {/*
+                  KEY FIX: This wrapper must NOT have position:absolute,
+                  must fill 100% of the Rnd box, and must use pointerEvents:none
+                  on non-interactive children so Rnd receives all mouse events.
+                */}
+                <div
+                  className="dl-rnd-item"
+                  onMouseEnter={() => setHoveredId(`photo-${photo.id}`)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    transform: `rotate(${photo.rotation || 0}deg)`,
+                  }}
+                >
+                  {/* pointerEvents:none so the img doesn't steal drag events */}
+                  <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                    <StampPhoto
+                      src={`/${photo.file_path}`}
+                      alt={photo.original_name}
+                    />
+                  </div>
+                  <button
+                    className="dl-canvas-delete"
+                    style={{ opacity: isHovered ? 1 : 0 }}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePhoto(photo.id);
+                    }}
+                  >×</button>
+                </div>
+              </Rnd>
+            );
+        })}
+
+          {/* Prompt answer rendered like washi tape note */}
+          {answerText && dailyPrompt && (() => {
+            const ans = answers[0];
+            const isHovered = hoveredId === 'answer-0';
+            return (
+              <Rnd
+                key="answer-rnd"
+                size={{ width: ans?.width || 260, height: ans?.height || 120 }}
+                position={{ x: ans?.pos_x ?? 50, y: ans?.pos_y ?? 300 }}
+                onDragStop={(e, d) => {
+                  setAnswers(prev => {
+                    const updated = [...prev];
+                    if (!updated[0]) updated[0] = { pos_x: d.x, pos_y: d.y, width: 260, height: 120 };
+                    else updated[0] = { ...updated[0], pos_x: d.x, pos_y: d.y };
+                    return updated;
+                  });
+                  setSaved(false);
+                }}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setAnswers(prev => {
+                    const updated = [...prev];
+                    const entry = updated[0] || {};
+                    updated[0] = {
+                      ...entry,
+                      pos_x: position.x,
+                      pos_y: position.y,
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                    };
+                    return updated;
+                  });
+                  setSaved(false);
+                }}
+                bounds="parent"
+                enableResizing={ENABLE_CORNERS}
+                resizeHandleStyles={RND_HANDLE_STYLES}
+                resizeHandleComponent={isHovered ? undefined : {
+                  topLeft: <div style={{ display: 'none' }} />,
+                  topRight: <div style={{ display: 'none' }} />,
+                  bottomLeft: <div style={{ display: 'none' }} />,
+                  bottomRight: <div style={{ display: 'none' }} />,
+                }}
+                minWidth={150}
+                minHeight={60}
+                style={{ cursor: 'move' }}
+              >
+                {/*
+                  KEY FIX for text: No position:absolute here.
+                  The washi note fills the Rnd box completely.
+                  Text uses pointerEvents:none so drag works.
+                */}
+                <div
+                  className="dl-rnd-item dl-rnd-answer"
+                  onMouseEnter={() => setHoveredId('answer-0')}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem',
+                    padding: '0.5rem 0.75rem',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div
+                    className="dl-canvas-answer-label"
+                    style={{ pointerEvents: 'none', flexShrink: 0 }}
+                  >
+                    {dailyPrompt.prompt_text.split(' ').slice(0, 5).join(' ')}…
+                  </div>
+                  <div
+                    className="dl-canvas-washi"
+                    style={{ flex: 1, overflow: 'hidden', pointerEvents: 'none' }}
+                  >
+                    <span className="dl-canvas-answer-text">{answerText}</span>
+                  </div>
+                </div>
+              </Rnd>
+            );
+          })()}
+
 
           {/* Stickers */}
           {stickers.map(sticker => (

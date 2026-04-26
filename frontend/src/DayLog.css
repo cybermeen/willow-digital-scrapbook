@@ -392,7 +392,7 @@
   position: relative;
   padding: 1.5rem;
   box-shadow: 0 4px 20px rgba(160,100,70,0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Date top-right */
@@ -405,6 +405,9 @@
   font-size: 0.95rem;
   color: #5a4030;
   line-height: 1.4;
+  /* Keep date above draggable items */
+  z-index: 100;
+  pointer-events: none;
 }
 
 .dl-canvas-date span:first-child {
@@ -418,14 +421,31 @@
   font-weight: 500;
 }
 
-/* ── Canvas items (photos, stickers) ─ */
-
-.dl-canvas-item,
-.dl-canvas-sticker {
-  position: absolute;
-  cursor: default;
+/* ─── Rnd draggable item wrappers ────────────────────────── */
+ 
+/*
+  .dl-rnd-item is the DIRECT child of each <Rnd>.
+  It must fill 100% of the Rnd box and NOT have position:absolute
+  (Rnd sets position itself on its own wrapper div).
+*/
+.dl-rnd-item {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: move;
+  border-radius: 4px;
+  box-sizing: border-box;
+  /* CHANGE: removed :hover outline — outline is now set inline based on selectedId */
 }
-
+ 
+/* Answer / washi tape variant */
+.dl-rnd-answer {
+  /* transparent so washi bg shows through */
+  background: transparent;
+}
+ 
+/* ─── Delete button (shown on hover via inline opacity) ──── */
+ 
 .dl-canvas-delete {
   position: absolute;
   top: -8px;
@@ -441,11 +461,24 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
   transition: opacity 0.15s;
   line-height: 1;
   padding: 0;
+  z-index: 30;
 }
+
+/* ── Canvas items (photos, stickers) ─ */
+
+.dl-canvas-item,
+.dl-canvas-sticker {
+  position: absolute;
+  cursor: default;
+}
+
+.dl-canvas-item:hover {
+  cursor: grab;
+}
+
 
 .dl-canvas-item:hover .dl-canvas-delete,
 .dl-canvas-sticker:hover .dl-canvas-delete {
