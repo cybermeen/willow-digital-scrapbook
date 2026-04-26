@@ -1,0 +1,584 @@
+/* ─── DayLog Layout ──────────────────────────────────────────── */
+
+.dl-layout {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 72px);
+  background: #f5f0e8;
+  align-items: flex-start;
+}
+
+/* ─── Loading / Error ──────────────────────────────────────── */
+
+.dl-loading,
+.dl-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 0.75rem;
+  color: #9a8a7a;
+  font-family: 'Nunito', sans-serif;
+}
+
+.dl-loading-icon {
+  font-size: 2.5rem;
+  animation: dl-spin 2s ease-in-out infinite;
+}
+
+@keyframes dl-spin {
+  0%, 100% { transform: rotate(-10deg); }
+  50%       { transform: rotate(10deg); }
+}
+
+/* ─── Left Panel ──────────────────────────────────────────── */
+
+.dl-panel {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dl-panel-title {
+  background: #e8d5cc;
+  border-radius: 14px;
+  text-align: center;
+  padding: 0.65rem 1rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4a3428;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Editor ──────────────────────────────────────────────── */
+
+.dl-editor {
+  background: #edd8cf;
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dl-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dl-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b4c3b;
+}
+
+.dl-select-wrap {
+  position: relative;
+}
+
+.dl-select {
+  width: 100%;
+  appearance: none;
+  background: #f5ede8;
+  border: 1.5px solid #d4b8ac;
+  border-radius: 20px;
+  padding: 0.4rem 2rem 0.4rem 0.85rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  color: #4a3428;
+  cursor: pointer;
+}
+
+.dl-select-wrap::after {
+  content: '▽';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.65rem;
+  color: #8a6a5a;
+  pointer-events: none;
+}
+
+.dl-prompt-box {
+  background: #f5ede8;
+  border: 1.5px solid #d4b8ac;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-size: 1rem;
+  font-style: italic;
+  color: #4a3428;
+  line-height: 1.5;
+}
+
+.dl-textarea {
+  width: 100%;
+  background: #f5ede8;
+  border: 1.5px solid #d4b8ac;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.875rem;
+  color: #3d2a1e;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.2s;
+}
+
+.dl-textarea:focus {
+  outline: none;
+  border-color: #b07a5a;
+}
+
+.dl-textarea::placeholder {
+  color: #bba898;
+}
+
+/* ─── Add media buttons ──────────────────────────────────── */
+
+.dl-add-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dl-add-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b4c3b;
+}
+
+.dl-add-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dl-add-btn {
+  background: #f5ede8;
+  border: 1.5px solid #d4b8ac;
+  border-radius: 20px;
+  padding: 0.3rem 0.85rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b4c3b;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.dl-add-btn:hover:not(:disabled) {
+  background: #e8d5cc;
+  border-color: #b07a5a;
+}
+
+.dl-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─── Magic Library button ───────────────────────────────── */
+
+.dl-library-btn {
+  background: #f5ede8;
+  border: 1.5px solid #c8a898;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5a3a28;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.18s;
+}
+
+.dl-library-btn:hover {
+  background: #e8d5cc;
+}
+
+/* ─── Magic Library panel ─────────────────────────────────── */
+
+.dl-library {
+  background: #edd8cf;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 300px;
+  position: relative;
+}
+
+.dl-library-header {
+  display: flex;
+  justify-content: center;
+}
+
+.dl-library-title-pill {
+  background: #f5ede8;
+  border: 1.5px solid #c8a898;
+  border-radius: 20px;
+  padding: 0.3rem 1.1rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5a3a28;
+}
+
+.dl-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  overflow-y: auto;
+  max-height: 320px;
+  padding: 0.25rem;
+}
+
+.dl-library-loading,
+.dl-library-empty {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  color: #9a7a6a;
+  grid-column: 1/-1;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.dl-asset-btn {
+  background: #f5ede8;
+  border: 1.5px solid #d4b8ac;
+  border-radius: 10px;
+  padding: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.dl-asset-btn:hover {
+  transform: scale(1.08);
+  border-color: #b07a5a;
+}
+
+.dl-asset-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.dl-library-back {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #8a5a3a;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.dl-library-back:hover {
+  color: #5a3a28;
+}
+
+/* ─── Library footer (import + save) ────────────────────── */
+
+.dl-library-footer {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.dl-import-btn {
+  flex: 1;
+  background: #f5ede8;
+  border: 1.5px solid #c8a898;
+  border-radius: 20px;
+  padding: 0.5rem 0.75rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5a3a28;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.dl-import-btn:hover {
+  background: #e8d5cc;
+}
+
+/* ─── Action buttons ─────────────────────────────────────── */
+
+.dl-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.dl-reset-btn {
+  background: #c97b5a;
+  border: none;
+  border-radius: 22px;
+  padding: 0.6rem 1.5rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.dl-reset-btn:hover {
+  background: #b5653e;
+  transform: scale(1.03);
+}
+
+.dl-save-btn {
+  background: #c97b5a;
+  border: none;
+  border-radius: 22px;
+  padding: 0.6rem 1.8rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.dl-save-btn:hover:not(:disabled) {
+  background: #b5653e;
+  transform: scale(1.03);
+}
+
+.dl-save-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.dl-save-btn--saved {
+  background: #7a9e7a !important;
+}
+
+/* ─── Right Canvas ───────────────────────────────────────── */
+
+.dl-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.dl-canvas {
+  background: #faf5ee;
+  border: 2px solid #e8d5cc;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 680px;
+  min-height: 540px;
+  position: relative;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(160,100,70,0.08);
+  overflow: hidden;
+}
+
+/* Date top-right */
+.dl-canvas-date {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  text-align: right;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  color: #5a4030;
+  line-height: 1.4;
+}
+
+.dl-canvas-date span:first-child {
+  display: block;
+  font-weight: 700;
+}
+
+.dl-canvas-date span:last-child {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Canvas items (photos, stickers) ─ */
+
+.dl-canvas-item,
+.dl-canvas-sticker {
+  position: absolute;
+  cursor: default;
+}
+
+.dl-canvas-delete {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #c97b5a;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 0.75rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+  padding: 0;
+}
+
+.dl-canvas-item:hover .dl-canvas-delete,
+.dl-canvas-sticker:hover .dl-canvas-delete {
+  opacity: 1;
+}
+
+/* ── Stamp photo ─ */
+
+.stamp-photo {
+  position: relative;
+  display: inline-block;
+  filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.18));
+}
+
+.stamp-photo img {
+  width: 180px;
+  height: 180px;
+  object-fit: cover;
+  /* Scalloped/stamp border */
+  clip-path: polygon(
+    5% 0%, 10% 0%, 15% 0%, 20% 0%, 25% 0%, 30% 0%, 35% 0%, 40% 0%, 45% 0%, 50% 0%,
+    55% 0%, 60% 0%, 65% 0%, 70% 0%, 75% 0%, 80% 0%, 85% 0%, 90% 0%, 95% 0%, 100% 5%,
+    100% 10%, 100% 15%, 100% 20%, 100% 25%, 100% 30%, 100% 35%, 100% 40%, 100% 45%,
+    100% 50%, 100% 55%, 100% 60%, 100% 65%, 100% 70%, 100% 75%, 100% 80%, 100% 85%,
+    100% 90%, 100% 95%, 95% 100%, 90% 100%, 85% 100%, 80% 100%, 75% 100%, 70% 100%,
+    65% 100%, 60% 100%, 55% 100%, 50% 100%, 45% 100%, 40% 100%, 35% 100%, 30% 100%,
+    25% 100%, 20% 100%, 15% 100%, 10% 100%, 5% 100%, 0% 95%, 0% 90%, 0% 85%, 0% 80%,
+    0% 75%, 0% 70%, 0% 65%, 0% 60%, 0% 55%, 0% 50%, 0% 45%, 0% 40%, 0% 35%, 0% 30%,
+    0% 25%, 0% 20%, 0% 15%, 0% 10%, 0% 5%
+  );
+}
+
+/* Better stamp edge using SVG filter on wrapper */
+.stamp-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #faf5ee;
+  clip-path: polygon(
+    0% 3%, 3% 0%, 6% 3%, 9% 0%, 12% 3%, 15% 0%, 18% 3%, 21% 0%, 24% 3%,
+    27% 0%, 30% 3%, 33% 0%, 36% 3%, 39% 0%, 42% 3%, 45% 0%, 48% 3%, 51% 0%,
+    54% 3%, 57% 0%, 60% 3%, 63% 0%, 66% 3%, 69% 0%, 72% 3%, 75% 0%, 78% 3%,
+    81% 0%, 84% 3%, 87% 0%, 90% 3%, 93% 0%, 96% 3%, 100% 0%,
+    97% 3%, 100% 6%, 97% 9%, 100% 12%, 97% 15%, 100% 18%, 97% 21%,
+    100% 24%, 97% 27%, 100% 30%, 97% 33%, 100% 36%, 97% 39%, 100% 42%,
+    97% 45%, 100% 48%, 97% 51%, 100% 54%, 97% 57%, 100% 60%, 97% 63%,
+    100% 66%, 97% 69%, 100% 72%, 97% 75%, 100% 78%, 97% 81%, 100% 84%,
+    97% 87%, 100% 90%, 97% 93%, 100% 96%, 97% 100%,
+    94% 97%, 91% 100%, 88% 97%, 85% 100%, 82% 97%, 79% 100%, 76% 97%,
+    73% 100%, 70% 97%, 67% 100%, 64% 97%, 61% 100%, 58% 97%, 55% 100%,
+    52% 97%, 49% 100%, 46% 97%, 43% 100%, 40% 97%, 37% 100%, 34% 97%,
+    31% 100%, 28% 97%, 25% 100%, 22% 97%, 19% 100%, 16% 97%, 13% 100%,
+    10% 97%, 7% 100%, 4% 97%, 0% 100%,
+    3% 97%, 0% 94%, 3% 91%, 0% 88%, 3% 85%, 0% 82%, 3% 79%, 0% 76%,
+    3% 73%, 0% 70%, 3% 67%, 0% 64%, 3% 61%, 0% 58%, 3% 55%, 0% 52%,
+    3% 49%, 0% 46%, 3% 43%, 0% 40%, 3% 37%, 0% 34%, 3% 31%, 0% 28%,
+    3% 25%, 0% 22%, 3% 19%, 0% 16%, 3% 13%, 0% 10%, 3% 7%, 0% 4%
+  );
+  z-index: -1;
+}
+
+/* ── Canvas sticker ─ */
+
+.dl-canvas-sticker img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ── Canvas prompt answer ─ */
+
+.dl-canvas-answer {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 1.5rem;
+  max-width: 300px;
+}
+
+.dl-canvas-answer-label {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-size: 0.9rem;
+  color: #6b4c3b;
+  margin-bottom: 0.4rem;
+  font-style: italic;
+}
+
+.dl-canvas-washi {
+  background: linear-gradient(135deg, #aad4e8 0%, #b0ddf0 50%, #8fcce0 100%);
+  border-radius: 3px;
+  padding: 0.4rem 0.75rem;
+  opacity: 0.9;
+  position: relative;
+  transform: rotate(-1deg);
+}
+
+.dl-canvas-washi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 8px,
+    rgba(255,255,255,0.12) 8px,
+    rgba(255,255,255,0.12) 9px
+  );
+  border-radius: 3px;
+}
+
+.dl-canvas-answer-text {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: #3a2a1e;
+  position: relative;
+}
+
+/* ── Empty state ─ */
+
+.dl-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.dl-canvas-empty p {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.88rem;
+  color: #c0a898;
+  line-height: 1.6;
+  max-width: 260px;
+}
