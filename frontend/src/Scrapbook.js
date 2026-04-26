@@ -6,11 +6,26 @@ const API = '/api/scrapbook';
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function formatLogDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
+  // 1. Safety check: if dateStr is missing, return placeholders
+  if (!dateStr) {
+    return { weekday: 'Loading...', full: 'Date pending' };
+  }
+
+  // 2. Ensure we handle the string format correctly
+  // If dateStr is an ISO string, we split to get the YYYY-MM-DD part
+  const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  const d = new Date(datePart + 'T00:00:00');
+
+  // 3. Final check if the date object is valid
+  if (isNaN(d.getTime())) {
+    return { weekday: 'Unknown', full: 'Invalid Date' };
+  }
+
   const day = d.getDate();
   const s = ['th','st','nd','rd'];
   const v = day % 100;
   const ordinal = day + (s[(v - 20) % 10] || s[v] || s[0]);
+  
   return {
     weekday: d.toLocaleDateString('en-US', { weekday: 'long' }),
     full: `${ordinal} ${d.toLocaleDateString('en-US', { month: 'long' })} ${d.getFullYear()}`,
