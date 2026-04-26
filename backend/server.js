@@ -1,43 +1,45 @@
 require('dotenv').config();
 const express = require('express');
-const path = require('path'); 
-const session = require('express-session'); //for login auth
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// allows the server to read the JSON sent in Postman
-app.use(express.json()); 
-
-
-// CORS — allow the React dev server to send cookies
+const path = require('path');
+const session = require('express-session');
 const cors = require('cors');
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// CORS — allow React dev server to send cookies
 app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
 }));
 
+// Parse JSON bodies
+app.use(express.json());
+
 // SESSION CONFIGURATION
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'iba_secret_key', 
+  secret: process.env.SESSION_SECRET || 'iba_secret_key',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, 
-    httpOnly: true, 
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 
-//ROUTES
-const scrapbookRoutes = require('./routes/scrapbook');
-const todoRoutes = require('./routes/to-do');
-const authRoutes = require('./routes/authRoutes');
+// ROUTES
+const authRoutes      = require('./routes/authRoutes');
+const todoRoutes      = require('./routes/to-do');
+const progressRoutes  = require('./routes/progress');
+const scrapbookRoutes = require('./routes/scrapbook'); // uncomment when upload.js is added
 
-app.use('/api/auth', authRoutes);
+
+app.use('/api/auth',      authRoutes);
+app.use('/api/todo',      todoRoutes);
+app.use('/api/progress',  progressRoutes);
 app.use('/api/scrapbook', scrapbookRoutes);
-app.use('/api/todo', todoRoutes);
 
-// static files: This line requires 'path' to be defined at the top
+// Static file uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.listen(PORT, () => {

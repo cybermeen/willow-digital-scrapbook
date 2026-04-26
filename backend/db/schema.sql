@@ -141,6 +141,24 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed_at TIMESTAMP
 );
 
+-- streaks feature
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS longest_streak INTEGER DEFAULT 0;
+ 
+-- 2. Create daily_progress table
+CREATE TABLE IF NOT EXISTS daily_progress (
+  id                    SERIAL PRIMARY KEY,
+  user_id               INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  date                  DATE NOT NULL,
+  completed_tasks       INTEGER DEFAULT 0,
+  total_tasks           INTEGER DEFAULT 0,
+  completion_percentage INTEGER DEFAULT 0,
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, date)
+);
+
 
 
 

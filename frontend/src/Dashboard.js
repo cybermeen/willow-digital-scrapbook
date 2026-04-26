@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ToDo from './ToDo';
+import Progress from './Progress';
 import DayLog from './DayLog';
 import Scrapbook from './Scrapbook';
 import './Dashboard.css';
@@ -8,15 +9,23 @@ function Dashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('todo');
 
   const navItems = [
-    { id: 'today',    label: '🌤 Today' },
-    { id: 'daylog',   label: '📓 Day Log' },
-    { id: 'todo',     label: '✅ To-Do' },
-    { id: 'scrapbook',label: '📌 Scrapbook' },
+    { id: 'daylog',    label: 'Day Log' },
+    { id: 'today',     label: 'Today' },
+    { id: 'todo',      label: 'To-Do' },
+    { id: 'scrapbook', label: 'Scrapbook' },
   ];
 
   const initials = user?.displayName
     ? user.displayName.charAt(0).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || '?';
+
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
+  
+  const handleTaskChange = () => setLastUpdated(Date.now());
+
+  // then pass down:
+  {activeTab === 'todo'  && <ToDo user={user} onTaskChange={handleTaskChange} />}
+  {activeTab === 'today' && <Progress lastUpdated={lastUpdated} />}
 
   return (
     <div className="dashboard">
@@ -47,23 +56,9 @@ function Dashboard({ user, onLogout }) {
       </header>
 
       <main className="dashboard-main">
-        {activeTab === 'todo' && <ToDo user={user} />}
-
-        {activeTab === 'today' && (
-          <div className="today-panel">
-            <h2>Good day, {user?.displayName || user?.email || 'Friend'}!</h2>
-            <p>Your Today dashboard is ready to help you relax and reflect.</p>
-            <div className="today-actions">
-              <button className="btn-primary" onClick={() => setActiveTab('daylog')}>
-                Open Day Log
-              </button>
-              <button className="btn-secondary" onClick={() => setActiveTab('todo')}>
-                View To-Do
-              </button>
-            </div>
-          </div>
-        )}
-        {activeTab === 'daylog' && <DayLog user={user} />}
+        {activeTab === 'today'     && <Progress />}
+        {activeTab === 'todo'      && <ToDo user={user} />}
+        {activeTab === 'daylog'    && <DayLog user={user} />}
         {activeTab === 'scrapbook' && <Scrapbook user={user} />}
       </main>
     </div>

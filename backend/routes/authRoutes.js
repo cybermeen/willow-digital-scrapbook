@@ -56,6 +56,11 @@ router.post('/login', async (req, res) => {
         // Secure Session Management
         req.session.userId = user.user_id;
 
+        // Recalculate progress on login so streak and average are fresh
+        const ProgressService = require('../services/progressService');
+        await ProgressService.calculateDailyProgress(user.user_id);
+        await ProgressService.calculateStreak(user.user_id);
+
         res.json({
             message: "Login successful",
             user: {

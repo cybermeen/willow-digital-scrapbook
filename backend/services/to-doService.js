@@ -59,6 +59,8 @@ async getCategorizedTasks(userId) {
 
   // Toggle task complete <-> pending
   async toggleTaskStatus(taskId, userId) {
+    console.log('toggleTaskStatus userId:', userId);
+    console.log('toggleTaskStatus taskId:', taskId);
     const query = `
       UPDATE tasks
       SET status = CASE WHEN status = 'pending' THEN 'completed' ELSE 'pending' END,
@@ -66,9 +68,9 @@ async getCategorizedTasks(userId) {
       WHERE id = $1 AND user_id = $2 RETURNING *`;
     const result = await db.query(query, [taskId, userId]);
 
-    //const ProgressService = require('./progressService');
-    //await ProgressService.calculateDailyProgress(userId);
-    //await ProgressService.calculateStreak(userId);
+    const ProgressService = require('./progressService');
+    await ProgressService.calculateDailyProgress(userId);
+    await ProgressService.calculateStreak(userId);
 
     return result.rows[0];
   },

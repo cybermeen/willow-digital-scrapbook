@@ -214,7 +214,7 @@ function TaskColumn({ title, emoji, tasks, onToggle, onDelete, onEdit }) {
 function CompletedSection({ tasks, onToggle, onDelete }) {
   return (
     <div className="completed-section">
-      <h2 className="completed-title">Completed Tasks ✨</h2>
+      <h2 className="completed-title">Completed Tasks </h2>
 
       {tasks.length === 0 ? (
         <p className="completed-empty">
@@ -241,6 +241,11 @@ function CompletedSection({ tasks, onToggle, onDelete }) {
                     <span className="task-due completed-at">
                       ✅ Completed {formatCompletedAt(task.completed_at)}
                     </span>
+                    {task.due_date && (
+                      <span className="task-due">
+                        due {formatDueDate(task.due_date)}
+                      </span>
+                    )}
                   </div>
 
                   {task.priority && (
@@ -266,7 +271,7 @@ function CompletedSection({ tasks, onToggle, onDelete }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-function ToDo() {
+function ToDo({ onTaskChange}) {
   const [tasks, setTasks]       = useState({ today: [], thisWeek: [], upcoming: [], completed: [] });
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -330,6 +335,7 @@ function ToDo() {
       });
       if (!res.ok) throw new Error();
       await fetchTasks();
+      if (onTaskChange) onTaskChange();
     } catch {
       setError('Could not update task.');
     }
@@ -389,17 +395,17 @@ function ToDo() {
 
       {/* ── Three columns ──────────────────────────────────────────────── */}
       <div className="todo-columns">
-        <TaskColumn emoji="☀️" title="Today"
+        <TaskColumn title="Today"
           tasks={tasks.today}
           onToggle={handleToggle} onDelete={handleDelete}
           onEdit={(task) => setModal({ mode: 'edit', task })}
         />
-        <TaskColumn emoji="📅" title="This Week"
+        <TaskColumn title="This Week"
           tasks={tasks.thisWeek}
           onToggle={handleToggle} onDelete={handleDelete}
           onEdit={(task) => setModal({ mode: 'edit', task })}
         />
-        <TaskColumn emoji="🔮" title="Upcoming"
+        <TaskColumn title="Upcoming"
           tasks={tasks.upcoming}
           onToggle={handleToggle} onDelete={handleDelete}
           onEdit={(task) => setModal({ mode: 'edit', task })}
