@@ -47,7 +47,7 @@ exports.getOrCreateLog = async (req, res) => {
       db.query('SELECT * FROM log_photos WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query('SELECT * FROM log_notes WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query(
-        `SELECT lpa.*, rp.prompt_text FROM log_prompt_answers lpa JOIN reflective_prompts rp ON lpa.prompt_id = rp.id WHERE lpa.log_id = $1`,
+        `SELECT lpa.*, rp.prompt_text FROM prompt_answers lpa JOIN reflective_prompts rp ON lpa.prompt_id = rp.id WHERE lpa.log_id = $1`,
         [log.id]
       ),
       db.query(
@@ -355,7 +355,7 @@ exports.savePromptAnswer = async (req, res) => {
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
 
     const result = await db.query(
-      `INSERT INTO log_prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      `INSERT INTO prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [logId, prompt_id, answer_text.trim(), pos_x || 0, pos_y || 0]
     );
 
@@ -373,7 +373,7 @@ exports.updatePromptAnswer = async (req, res) => {
     const { answer_text, pos_x, pos_y, z_index } = req.body;
 
     const ownership = await db.query(
-      `SELECT log_id FROM log_prompt_answers WHERE id = $1`,
+      `SELECT log_id FROM prompt_answers WHERE id = $1`,
       [answerId]
     );
     if (!ownership.rows.length) {
@@ -386,7 +386,7 @@ exports.updatePromptAnswer = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE log_prompt_answers SET answer_text = COALESCE($1, answer_text), pos_x = COALESCE($2, pos_x), pos_y = COALESCE($3, pos_y), z_index = COALESCE($4, z_index) WHERE id = $5 RETURNING *`,
+      `UPDATE prompt_answers SET answer_text = COALESCE($1, answer_text), pos_x = COALESCE($2, pos_x), pos_y = COALESCE($3, pos_y), z_index = COALESCE($4, z_index) WHERE id = $5 RETURNING *`,
       [answer_text, pos_x, pos_y, z_index, answerId]
     );
 
