@@ -34,8 +34,7 @@ exports.getOrCreateLog = async (req, res) => {
     // If none exists, create one
     if (result.rows.length === 0) {
       result = await db.query(
-        `INSERT INTO day_logs (user_id, log_date)`,
-        ` VALUES ($1, $2) RETURNING *`,
+        `INSERT INTO day_logs (user_id, log_date) VALUES ($1, $2) RETURNING *`,
         [userId, date]
       );
     }
@@ -48,15 +47,11 @@ exports.getOrCreateLog = async (req, res) => {
       db.query('SELECT * FROM log_photos WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query('SELECT * FROM log_notes WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query(
-        `SELECT lpa.*, rp.prompt_text FROM log_prompt_answers lpa`,
-        ` JOIN reflective_prompts rp ON lpa.prompt_id = rp.id`,
-        ` WHERE lpa.log_id = $1`,
+        `SELECT lpa.*, rp.prompt_text FROM log_prompt_answers lpa JOIN reflective_prompts rp ON lpa.prompt_id = rp.id WHERE lpa.log_id = $1`,
         [log.id]
       ),
       db.query(
-        `SELECT ls.*, aa.file_path as asset_path, aa.name as asset_name`,
-        ` FROM log_stickers ls JOIN art_assets aa ON ls.asset_id = aa.id`,
-        ` WHERE ls.log_id = $1 ORDER BY ls.z_index`,
+        `SELECT ls.*, aa.file_path as asset_path, aa.name as asset_name FROM log_stickers ls JOIN art_assets aa ON ls.asset_id = aa.id WHERE ls.log_id = $1 ORDER BY ls.z_index`,
         [log.id]
       )
     ]);
@@ -110,6 +105,29 @@ exports.getAllLogs = async (req, res) => {
 };
   
 
+// PATCH /api/scrapbook/logs/:logId
+// Update top-level log settings such as mood and layout style.
+exports.updateLog = async (req, res) => {
+  try {
+    const { logId } = req.params;
+    const { mood, layout_style } = req.body;
+
+    const isOwner = await verifyLogOwnership(logId, req.user.id);
+    if (!isOwner) return res.status(403).json({ error: 'Access denied' });
+
+    const result = await db.query(
+      `UPDATE day_logs SET mood = COALESCE($1, mood), layout_style = COALESCE($2, layout_style), updated_at = NOW() WHERE id = $3 RETURNING *`,
+      [mood, layout_style, logId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updateLog error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
 // POST /api/scrapbook/photos/:logId
 // Multer has already saved the file before this function runs.
 // req.file contains: { filename, originalname, size, path, mimetype }
@@ -135,8 +153,7 @@ exports.uploadPhoto = async (req, res) => {
 
     // Save photo metadata to the database
     const result = await db.query(
-      `INSERT INTO log_photos (log_id, file_path, original_name, file_size)`,
-      ` VALUES ($1, $2, $3, $4) RETURNING *`,
+      `INSERT INTO log_photos (log_id, file_path, original_name, file_size) VALUES ($1, $2, $3, $4) RETURNING *`,
       [logId, filePath, req.file.originalname, req.file.size]
     );
 
@@ -161,9 +178,7 @@ exports.updatePhoto = async (req, res) => {
 
     // First verify this photo's log belongs to the current user
     const ownership = await db.query(
-      `SELECT dl.user_id FROM log_photos lp`,
-      ` JOIN day_logs dl ON lp.log_id = dl.id`,
-      ` WHERE lp.id = $1`,
+      `SELECT dl.user_id FROM log_photos lp JOIN day_logs dl ON lp.log_id = dl.id WHERE lp.id = $1`,
       [photoId]
     );
     if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
@@ -171,15 +186,7 @@ exports.updatePhoto = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE log_photos`,
-      ` SET pos_x = COALESCE($1, pos_x),`,
-      `     pos_y = COALESCE($2, pos_y),`,
-      `     width = COALESCE($3, width),`,
-      `     height = COALESCE($4, height),`,
-      `     rotation = COALESCE($5, rotation),`,
-      `     z_index = COALESCE($6, z_index),`,
-      `     caption = COALESCE($7, caption)`,
-      ` WHERE id = $8 RETURNING *`,
+      `UPDATE log_photos SET pos_x = COALESCE($1, pos_x), pos_y = COALESCE($2, pos_y), width = COALESCE($3, width), height = COALESCE($4, height), rotation = COALESCE($5, rotation), z_index = COALESCE($6, z_index), caption = COALESCE($7, caption) WHERE id = $8 RETURNING *`,
       [pos_x, pos_y, width, height, rotation, z_index, caption, photoId]
     );
 
@@ -202,9 +209,7 @@ exports.deletePhoto = async (req, res) => {
 
     // Get the file path before deleting the DB record
     const photo = await db.query(
-      `SELECT lp.*, dl.user_id FROM log_photos lp`,
-      ` JOIN day_logs dl ON lp.log_id = dl.id`,
-      ` WHERE lp.id = $1`,
+      `SELECT lp.*, dl.user_id FROM log_photos lp JOIN day_logs dl ON lp.log_id = dl.id WHERE lp.id = $1`,
       [photoId]
     );
 
@@ -246,8 +251,7 @@ exports.createNote = async (req, res) => {
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
 
     const result = await db.query(
-      `INSERT INTO log_notes (log_id, content, pos_x, pos_y, bg_color, font_size)`,
-      ` VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      `INSERT INTO log_notes (log_id, content, pos_x, pos_y, bg_color, font_size) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
       [logId, content.trim(), pos_x || 0, pos_y || 0, bg_color || '#FFFDE7', font_size || 14]
     );
 
@@ -266,8 +270,7 @@ exports.updateNote = async (req, res) => {
 
     // Verify ownership through the log
     const ownership = await db.query(
-      `SELECT dl.user_id FROM log_notes ln`,
-      ` JOIN day_logs dl ON ln.log_id = dl.id WHERE ln.id = $1`,
+      `SELECT dl.user_id FROM log_notes ln JOIN day_logs dl ON ln.log_id = dl.id WHERE ln.id = $1`,
       [noteId]
     );
     if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
@@ -275,16 +278,7 @@ exports.updateNote = async (req, res) => {
     }
 
     const result = await db.query(
-      `UPDATE log_notes SET`,
-      `  content   = COALESCE($1, content),`,
-      `  pos_x     = COALESCE($2, pos_x),`,
-      `  pos_y     = COALESCE($3, pos_y),`,
-      `  width     = COALESCE($4, width),`,
-      `  rotation  = COALESCE($5, rotation),`,
-      `  z_index   = COALESCE($6, z_index),`,
-      `  bg_color  = COALESCE($7, bg_color),`,
-      `  font_size = COALESCE($8, font_size)`,
-      ` WHERE id = $9 RETURNING *`,
+      `UPDATE log_notes SET content = COALESCE($1, content), pos_x = COALESCE($2, pos_x), pos_y = COALESCE($3, pos_y), width = COALESCE($4, width), rotation = COALESCE($5, rotation), z_index = COALESCE($6, z_index), bg_color = COALESCE($7, bg_color), font_size = COALESCE($8, font_size) WHERE id = $9 RETURNING *`,
       [content, pos_x, pos_y, width, rotation, z_index, bg_color, font_size, noteId]
     );
 
@@ -300,8 +294,7 @@ exports.deleteNote = async (req, res) => {
   try {
     const { noteId } = req.params;
     const ownership = await db.query(
-      `SELECT dl.user_id FROM log_notes ln`,
-      ` JOIN day_logs dl ON ln.log_id = dl.id WHERE ln.id = $1`,
+      `SELECT dl.user_id FROM log_notes ln JOIN day_logs dl ON ln.log_id = dl.id WHERE ln.id = $1`,
       [noteId]
     );
     if (!ownership.rows.length || ownership.rows[0].user_id !== req.user.id) {
@@ -337,8 +330,7 @@ exports.getDailyPrompt = async (req, res) => {
     const offset = (userId + dateNum) % total;
 
     const result = await db.query(
-      `SELECT * FROM reflective_prompts`,
-      ` WHERE is_active = true ORDER BY id LIMIT 1 OFFSET $1`,
+      `SELECT * FROM reflective_prompts WHERE is_active = true ORDER BY id LIMIT 1 OFFSET $1`,
       [offset]
     );
 
@@ -363,8 +355,7 @@ exports.savePromptAnswer = async (req, res) => {
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
 
     const result = await db.query(
-      `INSERT INTO log_prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y)`,
-      ` VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      `INSERT INTO log_prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [logId, prompt_id, answer_text.trim(), pos_x || 0, pos_y || 0]
     );
 
@@ -375,7 +366,91 @@ exports.savePromptAnswer = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-  
+
+exports.updatePromptAnswer = async (req, res) => {
+  try {
+    const { answerId } = req.params;
+    const { answer_text, pos_x, pos_y, z_index } = req.body;
+
+    const ownership = await db.query(
+      `SELECT log_id FROM log_prompt_answers WHERE id = $1`,
+      [answerId]
+    );
+    if (!ownership.rows.length) {
+      return res.status(404).json({ error: 'Prompt answer not found' });
+    }
+
+    const isOwner = await verifyLogOwnership(ownership.rows[0].log_id, req.user.id);
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await db.query(
+      `UPDATE log_prompt_answers SET answer_text = COALESCE($1, answer_text), pos_x = COALESCE($2, pos_x), pos_y = COALESCE($3, pos_y), z_index = COALESCE($4, z_index) WHERE id = $5 RETURNING *`,
+      [answer_text, pos_x, pos_y, z_index, answerId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updatePromptAnswer error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.updateSticker = async (req, res) => {
+  try {
+    const { stickerId } = req.params;
+    const { pos_x, pos_y, width, height, rotation, z_index } = req.body;
+
+    const ownership = await db.query(
+      `SELECT log_id FROM log_stickers WHERE id = $1`,
+      [stickerId]
+    );
+    if (!ownership.rows.length) {
+      return res.status(404).json({ error: 'Sticker not found' });
+    }
+
+    const isOwner = await verifyLogOwnership(ownership.rows[0].log_id, req.user.id);
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const result = await db.query(
+      `UPDATE log_stickers SET pos_x = COALESCE($1, pos_x), pos_y = COALESCE($2, pos_y), width = COALESCE($3, width), height = COALESCE($4, height), rotation = COALESCE($5, rotation), z_index = COALESCE($6, z_index) WHERE id = $7 RETURNING *`,
+      [pos_x, pos_y, width, height, rotation, z_index, stickerId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('updateSticker error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+exports.deleteSticker = async (req, res) => {
+  try {
+    const { stickerId } = req.params;
+
+    const ownership = await db.query(
+      `SELECT log_id FROM log_stickers WHERE id = $1`,
+      [stickerId]
+    );
+    if (!ownership.rows.length) {
+      return res.status(404).json({ error: 'Sticker not found' });
+    }
+
+    const isOwner = await verifyLogOwnership(ownership.rows[0].log_id, req.user.id);
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    await db.query('DELETE FROM log_stickers WHERE id = $1', [stickerId]);
+    res.json({ message: 'Sticker deleted' });
+  } catch (err) {
+    console.error('deleteSticker error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 // GET /api/scrapbook/assets
 // Returns all available stickers/icons.
@@ -413,8 +488,7 @@ exports.placeSticker = async (req, res) => {
     }
 
     const result = await db.query(
-      `INSERT INTO log_stickers (log_id, asset_id, pos_x, pos_y, width, height, rotation)`,
-      ` VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO log_stickers (log_id, asset_id, pos_x, pos_y, width, height, rotation) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [logId, asset_id, pos_x || 0, pos_y || 0, width || 80, height || 80, rotation || 0]
     );
 
@@ -448,8 +522,7 @@ exports.saveLayout = async (req, res) => {
     if (photos) {
       for (const photo of photos) {
         await client.query(
-          `UPDATE log_photos SET pos_x=$1, pos_y=$2, width=$3, height=$4,`,
-          `  rotation=$5, z_index=$6 WHERE id=$7 AND log_id=$8`,
+          `UPDATE log_photos SET pos_x=$1, pos_y=$2, width=$3, height=$4, rotation=$5, z_index=$6 WHERE id=$7 AND log_id=$8`,
           [photo.pos_x, photo.pos_y, photo.width, photo.height,
            photo.rotation, photo.z_index, photo.id, logId]
         );
@@ -460,8 +533,7 @@ exports.saveLayout = async (req, res) => {
     if (notes) {
       for (const note of notes) {
         await client.query(
-          `UPDATE log_notes SET pos_x=$1, pos_y=$2, width=$3,`,
-          `  rotation=$4, z_index=$5 WHERE id=$6 AND log_id=$7`,
+          `UPDATE log_notes SET pos_x=$1, pos_y=$2, width=$3, rotation=$4, z_index=$5 WHERE id=$6 AND log_id=$7`,
           [note.pos_x, note.pos_y, note.width,
            note.rotation, note.z_index, note.id, logId]
         );
@@ -472,8 +544,7 @@ exports.saveLayout = async (req, res) => {
     if (stickers) {
       for (const sticker of stickers) {
         await client.query(
-          `UPDATE log_stickers SET pos_x=$1, pos_y=$2, width=$3,`,
-          `  height=$4, rotation=$5, z_index=$6 WHERE id=$7 AND log_id=$8`,
+          `UPDATE log_stickers SET pos_x=$1, pos_y=$2, width=$3, height=$4, rotation=$5, z_index=$6 WHERE id=$7 AND log_id=$8`,
           [sticker.pos_x, sticker.pos_y, sticker.width,
            sticker.height, sticker.rotation, sticker.z_index, sticker.id, logId]
         );
@@ -482,9 +553,7 @@ exports.saveLayout = async (req, res) => {
 
     // Update the log itself
     await client.query(
-      `UPDATE day_logs SET layout_style = COALESCE($1, layout_style),`,
-      `  mood = COALESCE($2, mood), updated_at = NOW()`,
-      ` WHERE id = $3`,
+      `UPDATE day_logs SET layout_style = COALESCE($1, layout_style), mood = COALESCE($2, mood), updated_at = NOW() WHERE id = $3`,
       [layout_style, mood, logId]
     );
 
