@@ -33,8 +33,7 @@ async function seed() {
 
   for (const p of prompts) {
     await db.query(
-      `INSERT INTO reflective_prompts (prompt_text, category)`,
-      ` VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO reflective_prompts (prompt_text, category) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [p.text, p.category]
     );
   }
@@ -42,9 +41,8 @@ async function seed() {
 
   for (const a of assets) {
     await db.query(
-      `INSERT INTO art_assets (name, file_path, category, is_achievement_reward)`,
-      ` VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-      [a.name, a.file, a.cat, a.reward]
+      `INSERT INTO art_assets (name, file_path, is_achievement_reward) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      [a.name, a.file, a.reward]
     );
   }
   console.log(`Inserted ${assets.length} art assets.`);
