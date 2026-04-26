@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import ToDo from './ToDo';
+import DayLog from './DayLog';
+import Scrapbook from './Scrapbook';
 import './Dashboard.css';
 
 function Dashboard({ user, onLogout }) {
@@ -48,26 +50,21 @@ function Dashboard({ user, onLogout }) {
         {activeTab === 'todo' && <ToDo user={user} />}
 
         {activeTab === 'today' && (
-          <div className="coming-soon">
-            <span>🌤</span>
-            <h2>Today</h2>
-            <p>Coming soon</p>
+          <div className="today-panel">
+            <h2>Good day, {user?.displayName || user?.email || 'Friend'}!</h2>
+            <p>Your Today dashboard is ready to help you relax and reflect.</p>
+            <div className="today-actions">
+              <button className="btn-primary" onClick={() => setActiveTab('daylog')}>
+                Open Day Log
+              </button>
+              <button className="btn-secondary" onClick={() => setActiveTab('todo')}>
+                View To-Do
+              </button>
+            </div>
           </div>
         )}
-        {activeTab === 'daylog' && (
-          <div className="coming-soon">
-            <span>📓</span>
-            <h2>Day Log</h2>
-            <p>Coming soon</p>
-          </div>
-        )}
-        {activeTab === 'scrapbook' && (
-          <div className="coming-soon">
-            <span>📌</span>
-            <h2>Scrapbook</h2>
-            <p>Coming soon</p>
-          </div>
-        )}
+        {activeTab === 'daylog' && <DayLog user={user} />}
+        {activeTab === 'scrapbook' && <Scrapbook user={user} />}
       </main>
     </div>
   );

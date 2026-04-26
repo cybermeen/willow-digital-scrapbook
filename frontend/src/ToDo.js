@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './ToDo.css';
 
-const API_URL = 'http://localhost:5000/api/todo';
+const API_URL = '/api/todo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
