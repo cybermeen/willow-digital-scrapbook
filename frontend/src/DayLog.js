@@ -7,9 +7,10 @@ const API = '/api/scrapbook';
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const PROMPT_TYPES = [
-  { value: 'short',      label: 'Short and sweet' },
-  { value: 'reflective', label: 'Reflective' },
-  { value: 'creative',   label: 'Creative' },
+  { value: 'gratitude', label: 'Gratitude' },
+  { value: 'growth',    label: 'Growth' },
+  { value: 'fun',       label: 'Fun' },
+  { value: 'general',   label: 'General' },
 ];
 
 function formatDisplayDate(dateStr) {
@@ -76,7 +77,7 @@ export default function DayLog({ user }) {
 
   // Daily prompt
   const [dailyPrompt,  setDailyPrompt]  = useState(null);
-  const [promptType,   setPromptType]   = useState('short');
+  const [promptType,   setPromptType]   = useState('gratitude');
   const [answerText,   setAnswerText]   = useState('');
   const [savingAnswer, setSavingAnswer] = useState(false);
 
@@ -125,6 +126,7 @@ export default function DayLog({ user }) {
           setAnswerText(logData.answers[0].answer_text || '');
         }
         if (promptRes.ok) setDailyPrompt(await promptRes.json());
+        setPromptType('gratitude');
       } catch (err) {
         setError(err.message);
       } finally {
@@ -133,6 +135,24 @@ export default function DayLog({ user }) {
     }
     load();
   }, [date]);
+
+  // ── Fetch prompt when category changes ──────────────────────────────────
+
+  useEffect(() => {
+    async function fetchPromptByCategory() {
+      try {
+        const res = await fetch(`${API}/prompts/daily?category=${promptType}`, { credentials: 'include' });
+        if (res.ok) {
+          setDailyPrompt(await res.json());
+        }
+      } catch (err) {
+        console.error('Error fetching prompt:', err);
+      }
+    }
+    if (date && promptType) {
+      fetchPromptByCategory();
+    }
+  }, [promptType, date]);
 
   // ── Art assets ─────────────────────────────────────────────────────────
 
