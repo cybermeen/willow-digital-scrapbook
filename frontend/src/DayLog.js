@@ -34,9 +34,9 @@ function todayStr() {
 
 function StampPhoto({ src, alt, style }) {
   return (
-    <div className="stamp-photo" style={style}>
-      <img src={src} alt={alt || 'log photo'} />
-      </div>
+    <div className="stamp-photo" style={{ ...style, width: '100%', height: '100%' }}>
+      <img src={src} alt={alt || 'log photo'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    </div>
   );
 }
 
@@ -68,7 +68,7 @@ export default function DayLog({ user }) {
   const [log,      setLog]      = useState(null);
   const [photos,   setPhotos]   = useState([]);
   const [videos,   setVideos]   = useState([]);
-  const [audio,    setAudio]    = useState([]);
+  const [audios,    setAudios]    = useState([]);
   const [answers,  setAnswers]  = useState([]);
   const [stickers, setStickers] = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -118,7 +118,7 @@ export default function DayLog({ user }) {
         setLog(logData.log);
         setPhotos(logData.photos   || []);
         setVideos(logData.videos   || []);
-        setAudio(logData.audio     || []);
+        setAudios(logData.audio     || []);
         setStickers(logData.stickers || []);
         setAnswers(logData.answers   || []);
         if (logData.answers?.length > 0) {
@@ -228,7 +228,7 @@ export default function DayLog({ user }) {
       });
       if (res.ok) {
         const newAudio = await res.json();
-        setAudio(prev => [...prev, newAudio]);
+        setAudios(prev => [...prev, newAudio]);
         setSaved(false);
       } else {
         const err = await res.json();
@@ -243,7 +243,7 @@ export default function DayLog({ user }) {
   const handleDeleteAudio = async (audioId) => {
     try {
       await fetch(`${API}/audio/${audioId}`, { method: 'DELETE', credentials: 'include' });
-      setAudio(prev => prev.filter(a => a.id !== audioId));
+      setAudios(prev => prev.filter(a => a.id !== audioId));
       setSaved(false);
     } catch (err) { console.error('Delete audio error:', err); }
   };
@@ -310,10 +310,31 @@ export default function DayLog({ user }) {
   const handleSave = async () => {
     if (!log) return;
     setSaving(true);
+
     try {
       await handleSaveAnswer();
+
+      //Save the full visual layout (positions and sizes)
+    const res = await fetch(`${API}/layout/${log.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      // Send the current state of photos and answers
+      body: JSON.stringify({ 
+        photos,
+        videos,
+        audios, 
+        answers,
+        stickers 
+      }),
+    });
+
+    if (!res.ok) throw new Error('Failed to save layout');
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("Could not save layout.");
     } finally { setSaving(false); }
   };
 
@@ -485,78 +506,165 @@ export default function DayLog({ user }) {
             <span>{display.ordinal} {display.month} {display.year}</span>
           </div>
 
-
-          {/* Photos */}
-          {photos.map((photo, i) => (
-            <div key={photo.id} className="dl-canvas-item" style={{
-              top: `${(photo.pos_y || 40) + i * 10}px`,
-              left: `${(photo.pos_x || 30) + i * 5}px`,
-            }}>
-              <StampPhoto src={`/${photo.file_path}`} alt={photo.original_name} />
-              <button className="dl-canvas-delete" onClick={() => handleDeletePhoto(photo.id)} title="Remove photo">×</button>
-            </div>
-          ))}
-
           {/* Videos */}
-          {videos.map((video, i) => (
-            <div key={video.id} className="dl-canvas-item dl-canvas-item--video" style={{
-              top: `${(video.pos_y || 40) + i * 15}px`,
-              left: `${(video.pos_x || 30) + i * 5}px`,
-            }}>
-              <div className="dl-video-wrap">
-                <video
-                  src={`/${video.file_path}`}
-                  controls
-                  preload="metadata"
-                  className="dl-video-player"
+          {videos.map((video, i) => {
+            const isHovered = hoveredId === `video-${video.id}`;
+            return (
+              <Rnd
+                key={video.id}
+                size={{ width: video.width || 400, height: video.height || 300 }}
+                position={{ x: video.pos_x || 30, y: video.pos_y || 40 }}
+                onDragStop={(e, d) => {
+                  setVideos(prev => prev.map((v, idx) =>
+                    idx === i ? { ...v, pos_x: d.x, pos_y: d.y } : v
+                  ));
+                  setSaved(false);
+                }}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setVideos(prev => prev.map((v, idx) =>
+                    idx === i ? {
+                      ...v,
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                      pos_x: position.x,
+                      pos_y: position.y,
+                    } : v
+                  ));
+                  setSaved(false);
+                }}
+                bounds="parent"
+                enableResizing={ENABLE_CORNERS}
+                resizeHandleStyles={RND_HANDLE_STYLES}
+                resizeHandleComponent={isHovered ? undefined : {
+                  topLeft: <div style={{ display: 'none' }} />,
+                  topRight: <div style={{ display: 'none' }} />,
+                  bottomLeft: <div style={{ display: 'none' }} />,
+                  bottomRight: <div style={{ display: 'none' }} />,
+                }}
+                minWidth={150}
+                minHeight={100}
+                style={{ cursor: isHovered ? 'grab' : 'auto' }}
+              >
+                <div
+                  className="dl-rnd-item"
+                  onMouseEnter={() => setHoveredId(`video-${video.id}`)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
                 >
-                  Your browser does not support video.
-                </video>
-                <div className="dl-media-label">
-                  🎬 {video.original_name}
-                  <span className="dl-media-size">{formatFileSize(video.file_size)}</span>
+                  <div style={{ flex: 1, pointerEvents: 'auto', overflow: 'hidden' }}>
+                    <video
+                      src={`/${video.file_path}`}
+                      controls
+                      preload="metadata"
+                      className="dl-video-player"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    >
+                      Your browser does not support video.
+                    </video>
+                  </div>
+                  <button
+                    className="dl-canvas-delete"
+                    style={{ opacity: isHovered ? 1 : 0 }}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteVideo(video.id);
+                    }}
+                  >×</button>
                 </div>
-              </div>
-              <button className="dl-canvas-delete" onClick={() => handleDeleteVideo(video.id)} title="Remove video">×</button>
-            </div>
-          ))}
+              </Rnd>
+            );
+          })}
 
           {/* Audio */}
-          {audio.map((track, i) => (
-            <div key={track.id} className="dl-canvas-item dl-canvas-item--audio" style={{
-              top: `${(track.pos_y || 200) + i * 80}px`,
-              left: `${(track.pos_x || 30) + i * 5}px`,
-            }}>
-              <div className="dl-audio-wrap">
-                <div className="dl-audio-header">
-                  <span className="dl-audio-icon">🎵</span>
-                  <span className="dl-audio-name">{track.original_name}</span>
-                  <span className="dl-media-size">{formatFileSize(track.file_size)}</span>
-                </div>
-                <audio
-                  src={`/${track.file_path}`}
-                  controls
-                  preload="metadata"
-                  className="dl-audio-player"
+          {audios.map((track, i) => {
+            const isHovered = hoveredId === `audio-${track.id}`;
+            return (
+              <Rnd
+                key={track.id}
+                size={{ width: track.width || 350, height: track.height || 100 }}
+                position={{ x: track.pos_x || 30, y: track.pos_y || 200 }}
+                onDragStop={(e, d) => {
+                  setAudios(prev => prev.map((a, idx) =>
+                    idx === i ? { ...a, pos_x: d.x, pos_y: d.y } : a
+                  ));
+                  setSaved(false);
+                }}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setAudios(prev => prev.map((a, idx) =>
+                    idx === i ? {
+                      ...a,
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                      pos_x: position.x,
+                      pos_y: position.y,
+                    } : a
+                  ));
+                  setSaved(false);
+                }}
+                bounds="parent"
+                enableResizing={ENABLE_CORNERS}
+                resizeHandleStyles={RND_HANDLE_STYLES}
+                resizeHandleComponent={isHovered ? undefined : {
+                  topLeft: <div style={{ display: 'none' }} />,
+                  topRight: <div style={{ display: 'none' }} />,
+                  bottomLeft: <div style={{ display: 'none' }} />,
+                  bottomRight: <div style={{ display: 'none' }} />,
+                }}
+                minWidth={200}
+                minHeight={80}
+                style={{ cursor: isHovered ? 'grab' : 'auto' }}
+              >
+                <div
+                  className="dl-rnd-item"
+                  onMouseEnter={() => setHoveredId(`audio-${track.id}`)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '0.5rem',
+                    boxSizing: 'border-box',
+                    gap: '0.35rem',
+                  }}
                 >
-                  Your browser does not support audio.
-                </audio>
-              </div>
-              <button className="dl-canvas-delete" onClick={() => handleDeleteAudio(track.id)} title="Remove audio">×</button>
-            </div>
-          ))}
-
-          {/* Prompt answer */}
-          {answerText && dailyPrompt && (
-            <div className="dl-canvas-answer">
-              <div className="dl-canvas-answer-label">
-                {dailyPrompt.prompt_text.split(' ').slice(0, 5).join(' ')}…
-              </div>
-              <div className="dl-canvas-washi">
-                <span className="dl-canvas-answer-text">{answerText}</span>
-              </div>
-            </div>
-          )}
+                  <div className="dl-audio-header" style={{ pointerEvents: 'none', flexShrink: 0 }}>
+                    <span className="dl-audio-icon">🎵</span>
+                    <span className="dl-audio-name">{track.original_name}</span>
+                    <span className="dl-media-size">{formatFileSize(track.file_size)}</span>
+                  </div>
+                  <div style={{ flex: 1, pointerEvents: 'auto', overflow: 'hidden' }}>
+                    <audio
+                      src={`/${track.file_path}`}
+                      controls
+                      preload="metadata"
+                      className="dl-audio-player"
+                      style={{ width: '100%', height: '100%' }}
+                    >
+                      Your browser does not support audio.
+                    </audio>
+                  </div>
+                  <button
+                    className="dl-canvas-delete"
+                    style={{ opacity: isHovered ? 1 : 0 }}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAudio(track.id);
+                    }}
+                  >×</button>
+                </div>
+              </Rnd>
+            );
+          })}
 
           {/* Uploaded photos as stamps */}
           {photos.map((photo, i) => {
@@ -597,7 +705,7 @@ export default function DayLog({ user }) {
                 }}
                 minWidth={80}
                 minHeight={80}
-                style={{ cursor: 'move' }}
+                style={{ cursor: isHovered ? 'grab' : 'auto' }}
               >
                 {/*
                   KEY FIX: This wrapper must NOT have position:absolute,
@@ -612,11 +720,14 @@ export default function DayLog({ user }) {
                     width: '100%',
                     height: '100%',
                     position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     transform: `rotate(${photo.rotation || 0}deg)`,
                   }}
                 >
                   {/* pointerEvents:none so the img doesn't steal drag events */}
-                  <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                  <div style={{ width: '100%', height: '100%', pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <StampPhoto
                       src={`/${photo.file_path}`}
                       alt={photo.original_name}
@@ -680,7 +791,7 @@ export default function DayLog({ user }) {
                 }}
                 minWidth={150}
                 minHeight={60}
-                style={{ cursor: 'move' }}
+                style={{ cursor: isHovered ? 'grab' : 'auto' }}
               >
                 {/*
                   KEY FIX for text: No position:absolute here.
