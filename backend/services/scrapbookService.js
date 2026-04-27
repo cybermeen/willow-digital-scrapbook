@@ -330,9 +330,18 @@ exports.deleteNote = async (req, res) => {
 
 exports.getDailyPrompt = async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT * FROM reflective_prompts WHERE is_active = true ORDER BY RANDOM() LIMIT 1`
-    );
+    const { category } = req.query;
+    let query = `SELECT * FROM reflective_prompts WHERE is_active = true`;
+    const params = [];
+    
+    if (category) {
+      query += ` AND category = $1`;
+      params.push(category);
+    }
+    
+    query += ` ORDER BY RANDOM() LIMIT 1`;
+    
+    const result = await db.query(query, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'No prompts found' });
     res.json(result.rows[0]);
   } catch (err) {
