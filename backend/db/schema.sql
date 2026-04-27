@@ -123,6 +123,8 @@ CREATE TABLE IF NOT EXISTS prompt_answers (
   -- Position on canvas
   pos_x       FLOAT DEFAULT 0,
   pos_y       FLOAT DEFAULT 0,
+  width       FLOAT DEFAULT 260,
+  height      FLOAT DEFAULT 120,
   z_index     INTEGER DEFAULT 0,
 
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -190,6 +192,10 @@ CREATE TABLE IF NOT EXISTS daily_progress (
   updated_at            TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (user_id, date)
 );
+
+-- Add prompt answer width and height if they are missing from the existing schema
+ALTER TABLE prompt_answers ADD COLUMN IF NOT EXISTS width FLOAT DEFAULT 260;
+ALTER TABLE prompt_answers ADD COLUMN IF NOT EXISTS height FLOAT DEFAULT 120;
 
 -- Add missing columns for layout persistence
 ALTER TABLE log_videos ADD COLUMN IF NOT EXISTS rotation FLOAT DEFAULT 0;
