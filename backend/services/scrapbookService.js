@@ -500,12 +500,12 @@ exports.saveLayout = async (req, res) => {
         );
       }
     }
-    // Update Prompt Answer Positions
+    // Update Prompt Answer Positions and size
     if (answers) {
       for (const a of answers) {
         await client.query(
-          `UPDATE log_prompt_answers SET pos_x=$1, pos_y=$2, z_index=$3 WHERE id=$4 AND log_id=$5`,
-          [a.pos_x, a.pos_y, a.z_index, a.id, logId]
+          `UPDATE prompt_answers SET pos_x=COALESCE($1,pos_x), pos_y=COALESCE($2,pos_y), width=COALESCE($3,width), height=COALESCE($4,height), z_index=COALESCE($5,z_index) WHERE id=$6 AND log_id=$7`,
+          [a.pos_x, a.pos_y, a.width, a.height, a.z_index, a.id, logId]
         );
       }
     }
