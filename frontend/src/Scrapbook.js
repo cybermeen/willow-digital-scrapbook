@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import './Scrapbook.css';
 
 const API = '/api/scrapbook';
@@ -203,12 +204,51 @@ export default function Scrapbook() {
     load();
   }, []);
 
+  const bookRef = useRef(null);
+  const [sharing, setSharing] = useState(false);
   const totalPages = Math.ceil(logs.length / 2);
   const leftLog = logs[pageIndex * 2] || null;
   const rightLog = logs[pageIndex * 2 + 1] || null;
 
   const goPrev = () => setPageIndex(p => Math.max(0, p - 1));
   const goNext = () => setPageIndex(p => Math.min(totalPages - 1, p + 1));
+
+  const handleShare = async () => {
+    if (!bookRef.current) return;
+    setSharing(true);
+    try {
+      const canvas = await html2canvas(bookRef.current, {
+        backgroundColor: '#f5f0e8',
+        scale: 2,
+        useCORS: true,
+        imageTimeout: 30000,
+        allowTaint: false,
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
+      });
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          throw new Error('Unable to create image blob');
+        }
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `scrapbook-page-${pageIndex + 1}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Share error:', err);
+      alert('Unable to export scrapbook. Please try again.');
+    } finally {
+      setSharing(false);
+    }
+  };
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -244,11 +284,17 @@ export default function Scrapbook() {
     <div className="sb-layout">
       {/* Share button */}
       <div className="sb-toolbar">
-        <button className="sb-share-btn">Share</button>
+        <button
+          className="sb-share-btn"
+          onClick={handleShare}
+          disabled={sharing}
+        >
+          {sharing ? 'Preparing…' : 'Share'}
+        </button>
       </div>
 
       {/* Book spread */}
-      <div className="sb-book-wrap">
+      <div className="sb-book-wrap" ref={bookRef}>
         <ScrapbookPage leftLog={leftLog} rightLog={rightLog} />
       </div>
 
