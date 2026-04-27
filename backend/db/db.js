@@ -22,5 +22,5 @@ const pool = new Pool({
 
 // The "Standard" way to export for a Multi-User app
 module.exports = {
-  query: (text, params) => pool.query(text, params),
+  query: (text, params) => pool.query(text, params), pool,
 };
