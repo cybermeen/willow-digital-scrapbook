@@ -449,13 +449,16 @@ exports.deleteSticker = async (req, res) => {
 // ── Layout ─────────────────────────────────────────────────────────────────
 
 exports.saveLayout = async (req, res) => {
-  const client = await db.connect();
+  const client = await db.pool.connect();
   try {
     const { logId } = req.params;
-    const { photos, notes, stickers, answers, layout_style, mood } = req.body;
+    const { photos, videos, audios, notes, stickers, answers, layout_style, mood } = req.body;
+
     const isOwner = await verifyLogOwnership(logId, req.user.id);
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
+
     await client.query('BEGIN');
+    
     if (photos) {
       for (const p of photos) {
         await client.query(
@@ -464,11 +467,36 @@ exports.saveLayout = async (req, res) => {
         );
       }
     }
+    if (videos) {
+      for (const v of videos) {
+        await client.query(
+          `UPDATE log_videos SET pos_x=$1,pos_y=$2,width=$3,height=$4,rotation=$5,z_index=$6 WHERE id=$7 AND log_id=$8`,
+          [v.pos_x,v.pos_y,v.width,v.height,v.rotation,v.z_index,v.id,logId]
+        );
+      }
+    }
+    if (audios) {
+      for (const a of audios) {
+        await client.query(
+          `UPDATE log_audio SET pos_x=$1,pos_y=$2,width=$3,height=$4,rotation=$5,z_index=$6 WHERE id=$7 AND log_id=$8`,
+          [a.pos_x,a.pos_y,a.width,a.height,a.rotation,a.z_index,a.id,logId]
+        );
+      }
+    }
     if (notes) {
       for (const n of notes) {
         await client.query(
           `UPDATE log_notes SET pos_x=$1,pos_y=$2,width=$3,rotation=$4,z_index=$5 WHERE id=$6 AND log_id=$7`,
           [n.pos_x,n.pos_y,n.width,n.rotation,n.z_index,n.id,logId]
+        );
+      }
+    }
+    // Update Prompt Answer Positions
+    if (answers) {
+      for (const a of answers) {
+        await client.query(
+          `UPDATE log_prompt_answers SET pos_x=$1, pos_y=$2, z_index=$3 WHERE id=$4 AND log_id=$5`,
+          [a.pos_x, a.pos_y, a.z_index, a.id, logId]
         );
       }
     }
