@@ -69,6 +69,11 @@
   background: #edd8cf;
 }
 
+.sb-share-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* ─── Book wrap ─────────────────────────────────────────────── */
 
 .sb-book-wrap {
