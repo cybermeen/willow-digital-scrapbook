@@ -13,6 +13,31 @@ const PROMPT_TYPES = [
   { value: 'general',   label: 'General' },
 ];
 
+// Stickers unlocked after a 7-day streak
+const STREAK_EMOJI_STICKERS = [
+  { emoji: '🌟', label: 'Gold Star' },
+  { emoji: '⚡', label: 'Lightning' },
+  { emoji: '🦋', label: 'Butterfly' },
+  { emoji: '🎉', label: 'Party' },
+  { emoji: '🌈', label: 'Rainbow' },
+  { emoji: '🏆', label: 'Trophy' },
+  { emoji: '🔥', label: 'Fire' },
+  { emoji: '🌺', label: 'Flower' },
+  { emoji: '💫', label: 'Sparkle' },
+  { emoji: '🎊', label: 'Confetti' },
+  { emoji: '✨', label: 'Magic' },
+  { emoji: '🦄', label: 'Unicorn' },
+];
+
+// Special prompts unlocked after a 7-day streak
+const STREAK_SPECIAL_PROMPTS = [
+  "You've shown incredible consistency — what habit made this possible?",
+  "A 7-day champion! What does showing up every day mean to you?",
+  "Reflect on the biggest win from your streak week.",
+  "What will you do to keep this momentum going into next week?",
+  "Name three things this streak has taught you about yourself.",
+];
+
 function formatDisplayDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return {
@@ -72,8 +97,12 @@ export default function DayLog({ user }) {
   const [audios,    setAudios]    = useState([]);
   const [answers,  setAnswers]  = useState([]);
   const [stickers, setStickers] = useState([]);
+  const [notes,    setNotes]    = useState([]); // emoji stickers stored as notes
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState(null);
+
+  // Streak state
+  const [streak, setStreak] = useState(null);
 
   // Daily prompt
   const [dailyPrompt,  setDailyPrompt]  = useState(null);
@@ -95,6 +124,11 @@ export default function DayLog({ user }) {
   const [showLibrary,   setShowLibrary]   = useState(false);
   const [assets,        setAssets]        = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
+
+  // Streak Rewards panel
+  const [showStreakRewards,    setShowStreakRewards]    = useState(false);
+  const [streakRewardTab,      setStreakRewardTab]      = useState('stickers'); // 'stickers' | 'prompts'
+  const [showUnlockCelebration, setShowUnlockCelebration] = useState(false);
 
   // Save state
   const [saving, setSaving] = useState(false);
@@ -122,7 +156,11 @@ export default function DayLog({ user }) {
       setLoading(true);
       setError(null);
       try {
-        const logRes = await fetch(`${API}/logs/${date}`, { credentials: 'include' });
+        const [logRes, promptRes, streakRes] = await Promise.all([
+          fetch(`${API}/logs/${date}`, { credentials: 'include' }),
+          fetch(`${API}/prompts/daily`, { credentials: 'include' }),
+          fetch('/api/progress/streak', { credentials: 'include' }),
+        ]);
         if (!logRes.ok) throw new Error('Failed to load log');
         const logData = await logRes.json();
         setLog(logData.log);
@@ -131,6 +169,9 @@ export default function DayLog({ user }) {
         setAudios(logData.audio     || []);
         setStickers(logData.stickers || []);
         setAnswers(logData.answers   || []);
+
+        // Load notes (emoji stickers are stored here)
+        setNotes(logData.notes || []);
 
         if (logData.answers?.length > 0) {
           const savedAnswer = logData.answers[0];
@@ -144,6 +185,20 @@ export default function DayLog({ user }) {
         } else {
           await fetchPromptByCategory(promptType);
         }
+
+        if (promptRes.ok) setDailyPrompt(await promptRes.json());
+        setPromptType('gratitude');
+
+        if (streakRes.ok) {
+          const streakData = await streakRes.json();
+          setStreak(streakData);
+          // Show a brief celebration if rewards just became available
+          if (streakData.rewardsUnlocked) {
+            setShowUnlockCelebration(true);
+            setTimeout(() => setShowUnlockCelebration(false), 4000);
+          }
+        }
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -320,6 +375,47 @@ export default function DayLog({ user }) {
     } catch (err) { console.error('Update sticker error:', err); }
   };
 
+  // ── Streak Emoji Stickers (stored as notes) ──────────────────────────────
+
+  const handlePlaceEmojiSticker = async (emoji) => {
+    if (!log) return;
+    try {
+      const res = await fetch(`${API}/notes/${log.id}`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `EMOJI:${emoji}`,
+          pos_x: Math.floor(Math.random() * 350) + 60,
+          pos_y: Math.floor(Math.random() * 320) + 60,
+          bg_color: 'transparent',
+          font_size: 48,
+        }),
+      });
+      if (res.ok) {
+        const newNote = await res.json();
+        setNotes(prev => [...prev, newNote]);
+        setSaved(false);
+      }
+    } catch (err) { console.error('Place emoji sticker error:', err); }
+    setShowStreakRewards(false);
+  };
+
+  const handleDeleteEmojiNote = async (noteId) => {
+    try {
+      await fetch(`${API}/notes/${noteId}`, { method: 'DELETE', credentials: 'include' });
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+      setSaved(false);
+    } catch (err) { console.error('Delete emoji note error:', err); }
+  };
+
+  // Use a streak special prompt
+  const handleUseStreakPrompt = (promptText) => {
+    setDailyPrompt({ id: null, prompt_text: promptText });
+    setAnswerText('');
+    setSaved(false);
+    setShowStreakRewards(false);
+  };
+
   // ── Prompt answer ───────────────────────────────────────────────────────
 
   const handleSaveAnswer = async (localAnswer) => {
@@ -391,6 +487,7 @@ export default function DayLog({ user }) {
           audios,
           answers: layoutAnswers,
           stickers,
+          notes,
         }),
       });
 
@@ -428,14 +525,119 @@ export default function DayLog({ user }) {
     );
   }
 
+  const rewardsUnlocked = streak?.rewardsUnlocked;
+  const currentStreak   = streak?.currentStreak || 0;
+
+  // Emoji notes (filter notes that start with EMOJI:)
+  const emojiNotes = notes.filter(n => n.content?.startsWith('EMOJI:'));
+
+
   return (
     <div className="dl-layout">
+      {/* ── Unlock Celebration Overlay ── */}
+      {showUnlockCelebration && (
+        <div className="dl-unlock-celebration" aria-live="polite">
+          <div className="dl-unlock-celebration-inner">
+            <span className="dl-unlock-celebration-emoji">🏆</span>
+            <div>
+              <strong>Streak Rewards Unlocked!</strong>
+              <p>Your {currentStreak}-day streak earned you exclusive stickers &amp; special prompts!</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Left Panel ── */}
       <div className="dl-panel">
+        {/* Streak mini badge — always visible if streak exists */}
+        {streak && (
+          <div className={`dl-streak-badge ${rewardsUnlocked ? 'dl-streak-badge--unlocked' : ''}`}>
+            <span className="dl-streak-badge-flame">🔥</span>
+            <span className="dl-streak-badge-count">{currentStreak} day streak</span>
+            {rewardsUnlocked && (
+              <span className="dl-streak-badge-unlocked">✨ Rewards unlocked</span>
+            )}
+          </div>
+        )}
         <div className="dl-panel-title">Create Today's Log</div>
+        
 
-        {!showLibrary ? (
+      {/* ── Streak Rewards Panel ── */}
+        {rewardsUnlocked && showStreakRewards ? (
+          <div className="dl-streak-rewards">
+            {/* Header */}
+            <div className="dl-streak-rewards-header">
+              <span className="dl-streak-rewards-title">🏆 Streak Rewards</span>
+              <button className="dl-streak-rewards-close" onClick={() => setShowStreakRewards(false)}>✕</button>
+            </div>
+            <p className="dl-streak-rewards-sub">Earned by completing 7 consecutive days of tasks!</p>
+
+            {/* Tabs */}
+            <div className="dl-streak-tabs">
+              <button
+                className={`dl-streak-tab ${streakRewardTab === 'stickers' ? 'dl-streak-tab--active' : ''}`}
+                onClick={() => setStreakRewardTab('stickers')}
+              >
+                🎨 Stickers
+              </button>
+              <button
+                className={`dl-streak-tab ${streakRewardTab === 'prompts' ? 'dl-streak-tab--active' : ''}`}
+                onClick={() => setStreakRewardTab('prompts')}
+              >
+                ✍️ Prompts
+              </button>
+            </div>
+
+            {/* Stickers tab */}
+            {streakRewardTab === 'stickers' && (
+              <div className="dl-streak-sticker-grid">
+                {STREAK_EMOJI_STICKERS.map(({ emoji, label }) => (
+                  <button
+                    key={emoji}
+                    className="dl-streak-sticker-btn"
+                    onClick={() => handlePlaceEmojiSticker(emoji)}
+                    title={`Place ${label} sticker`}
+                  >
+                    <span className="dl-streak-sticker-emoji">{emoji}</span>
+                    <span className="dl-streak-sticker-label">{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Prompts tab */}
+            {streakRewardTab === 'prompts' && (
+              <div className="dl-streak-prompts-list">
+                {STREAK_SPECIAL_PROMPTS.map((prompt, i) => (
+                  <button
+                    key={i}
+                    className="dl-streak-prompt-btn"
+                    onClick={() => handleUseStreakPrompt(prompt)}
+                  >
+                    <span className="dl-streak-prompt-num">✦</span>
+                    <span className="dl-streak-prompt-text">{prompt}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button className="dl-streak-rewards-back" onClick={() => setShowStreakRewards(false)}>
+              ◀ Back to editor
+            </button>
+          </div>
+
+          ) : !showLibrary ? (
           <div className="dl-editor">
+          {/* Streak Rewards open button */}
+            {rewardsUnlocked && (
+              <button
+                className="dl-streak-open-btn"
+                onClick={() => setShowStreakRewards(true)}
+              >
+                <span className="dl-streak-open-icon">🏆</span>
+                <span>Open Streak Rewards</span>
+                <span className="dl-streak-open-badge">NEW</span>
+              </button>
+            )}
             {/* Prompt type selector */}
             <div className="dl-field-group">
               <label className="dl-label">Choose prompt type:</label>
