@@ -100,6 +100,18 @@ export default function DayLog({ user }) {
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 
+  const fetchPromptByCategory = useCallback(async (category) => {
+    if (!category) return;
+    try {
+      const res = await fetch(`${API}/prompts/daily?category=${category}`, { credentials: 'include' });
+      if (res.ok) {
+        setDailyPrompt(await res.json());
+      }
+    } catch (err) {
+      console.error('Error fetching prompt:', err);
+    }
+  }, []);
+
   // Track which item is being hovered (to show handles)
   const [hoveredId, setHoveredId] = useState(null);
 
@@ -110,10 +122,7 @@ export default function DayLog({ user }) {
       setLoading(true);
       setError(null);
       try {
-        const [logRes, promptRes] = await Promise.all([
-          fetch(`${API}/logs/${date}`, { credentials: 'include' }),
-          fetch(`${API}/prompts/daily`, { credentials: 'include' }),
-        ]);
+        const logRes = await fetch(`${API}/logs/${date}`, { credentials: 'include' });
         if (!logRes.ok) throw new Error('Failed to load log');
         const logData = await logRes.json();
         setLog(logData.log);
@@ -122,11 +131,19 @@ export default function DayLog({ user }) {
         setAudios(logData.audio     || []);
         setStickers(logData.stickers || []);
         setAnswers(logData.answers   || []);
+
         if (logData.answers?.length > 0) {
-          setAnswerText(logData.answers[0].answer_text || '');
+          const savedAnswer = logData.answers[0];
+          setAnswerText(savedAnswer.answer_text || '');
+          setPromptType(savedAnswer.category || 'gratitude');
+          setDailyPrompt({
+            id: savedAnswer.prompt_id,
+            prompt_text: savedAnswer.prompt_text,
+            category: savedAnswer.category || 'gratitude',
+          });
+        } else {
+          await fetchPromptByCategory(promptType);
         }
-        if (promptRes.ok) setDailyPrompt(await promptRes.json());
-        setPromptType('gratitude');
       } catch (err) {
         setError(err.message);
       } finally {
@@ -138,21 +155,6 @@ export default function DayLog({ user }) {
 
   // ── Fetch prompt when category changes ──────────────────────────────────
 
-  useEffect(() => {
-    async function fetchPromptByCategory() {
-      try {
-        const res = await fetch(`${API}/prompts/daily?category=${promptType}`, { credentials: 'include' });
-        if (res.ok) {
-          setDailyPrompt(await res.json());
-        }
-      } catch (err) {
-        console.error('Error fetching prompt:', err);
-      }
-    }
-    if (date && promptType) {
-      fetchPromptByCategory();
-    }
-  }, [promptType, date]);
 
   // ── Art assets ─────────────────────────────────────────────────────────
 
@@ -278,9 +280,9 @@ export default function DayLog({ user }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           asset_id: asset.id,
-          pos_x: Math.floor(Math.random() * 300) + 50,
-          pos_y: Math.floor(Math.random() * 300) + 50,
-          width: 80, height: 80,
+          pos_x: Math.floor(Math.random() * 250) + 100,
+          pos_y: Math.floor(Math.random() * 250) + 100,
+          width: 100, height: 100,
         }),
       });
       if (res.ok) {
@@ -300,29 +302,68 @@ export default function DayLog({ user }) {
     } catch (err) { console.error('Delete sticker error:', err); }
   };
 
-  // ── Prompt answer ───────────────────────────────────────────────────────
-
-  const handleSaveAnswer = async () => {
-    if (!log || !dailyPrompt || !answerText.trim()) return;
-    setSavingAnswer(true);
+  const handleStickerUpdate = async () => {
+    if (!log || stickers.length === 0) return;
     try {
-      const existing = answers[0];
-      if (existing) {
-        const res = await fetch(`${API}/prompts/answer/${existing.id}`, {
+      for (const sticker of stickers) {
+        await fetch(`${API}/stickers/${sticker.id}`, {
           method: 'PATCH', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answer_text: answerText }),
+          body: JSON.stringify({
+            pos_x: sticker.pos_x,
+            pos_y: sticker.pos_y,
+            width: sticker.width,
+            height: sticker.height,
+          }),
         });
-        if (res.ok) setAnswers([await res.json()]);
+      }
+    } catch (err) { console.error('Update sticker error:', err); }
+  };
+
+  // ── Prompt answer ───────────────────────────────────────────────────────
+
+  const handleSaveAnswer = async (localAnswer) => {
+    if (!log || !dailyPrompt || !answerText.trim()) return null;
+    setSavingAnswer(true);
+    try {
+      const answerState = localAnswer || answers[0] || {};
+      const answerPayload = {
+        answer_text: answerText,
+        pos_x: answerState.pos_x || 0,
+        pos_y: answerState.pos_y || 0,
+        width: answerState.width || 260,
+        height: answerState.height || 120,
+        z_index: answerState.z_index || 0,
+      };
+
+      if (answerState.id) {
+        const res = await fetch(`${API}/prompts/answer/${answerState.id}`, {
+          method: 'PATCH', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(answerPayload),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setAnswers([updated]);
+          return updated;
+        }
       } else {
         const res = await fetch(`${API}/prompts/answer/${log.id}`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt_id: dailyPrompt.id, answer_text: answerText }),
+          body: JSON.stringify({ prompt_id: dailyPrompt.id, ...answerPayload }),
         });
-        if (res.ok) setAnswers([await res.json()]);
+        if (res.ok) {
+          const created = await res.json();
+          const hydrated = { ...answerState, ...created };
+          setAnswers([hydrated]);
+          return hydrated;
+        }
       }
-    } finally { setSavingAnswer(false); }
+      return null;
+    } finally {
+      setSavingAnswer(false);
+    }
   };
 
   // ── Save & Reset ─────────────────────────────────────────────────────────
@@ -332,22 +373,26 @@ export default function DayLog({ user }) {
     setSaving(true);
 
     try {
-      await handleSaveAnswer();
+      const currentAnswer = answers[0];
+      const savedAnswer = await handleSaveAnswer(currentAnswer);
+      const layoutAnswers = savedAnswer
+        ? [{ ...savedAnswer, ...(currentAnswer || {}) }]
+        : answers;
 
-      //Save the full visual layout (positions and sizes)
-    const res = await fetch(`${API}/layout/${log.id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      // Send the current state of photos and answers
-      body: JSON.stringify({ 
-        photos,
-        videos,
-        audios, 
-        answers,
-        stickers 
-      }),
-    });
+      await handleStickerUpdate();
+
+      const res = await fetch(`${API}/layout/${log.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          photos,
+          videos,
+          audios,
+          answers: layoutAnswers,
+          stickers,
+        }),
+      });
 
     if (!res.ok) throw new Error('Failed to save layout');
       setSaved(true);
@@ -395,7 +440,15 @@ export default function DayLog({ user }) {
             <div className="dl-field-group">
               <label className="dl-label">Choose prompt type:</label>
               <div className="dl-select-wrap">
-                <select className="dl-select" value={promptType} onChange={e => setPromptType(e.target.value)}>
+                <select
+                  className="dl-select"
+                  value={promptType}
+                  onChange={e => {
+                    const nextType = e.target.value;
+                    setPromptType(nextType);
+                    fetchPromptByCategory(nextType);
+                  }}
+                >
                   {PROMPT_TYPES.map(pt => (
                     <option key={pt.value} value={pt.value}>{pt.label}</option>
                   ))}
@@ -485,7 +538,7 @@ export default function DayLog({ user }) {
               )}
               {assets.map(asset => (
                 <button key={asset.id} className="dl-asset-btn" onClick={() => handlePlaceSticker(asset)} title={asset.name}>
-                  <img src={`/uploads/${asset.file_path}`} alt={asset.name}
+                  <img src={`/${asset.file_path}`} alt={asset.name}
                     onError={e => { e.target.style.display = 'none'; }} />
                 </button>
               ))}
@@ -841,7 +894,7 @@ export default function DayLog({ user }) {
                   </div>
                   <div
                     className="dl-canvas-washi"
-                    style={{ flex: 1, overflow: 'hidden', pointerEvents: 'none' }}
+                    style={{ flex: 1, overflow: 'auto', pointerEvents: 'none' }}
                   >
                     <span className="dl-canvas-answer-text">{answerText}</span>
                   </div>
@@ -852,18 +905,76 @@ export default function DayLog({ user }) {
 
 
           {/* Stickers */}
-          {stickers.map(sticker => (
-            <div key={sticker.id} className="dl-canvas-sticker" style={{
-              top: `${sticker.pos_y || 100}px`,
-              left: `${sticker.pos_x || 200}px`,
-              width: `${sticker.width || 80}px`,
-              height: `${sticker.height || 80}px`,
-            }}>
-              <img src={`/uploads/${sticker.asset_path}`} alt={sticker.asset_name}
-                onError={e => { e.target.style.display = 'none'; }} />
-              <button className="dl-canvas-delete" onClick={() => handleDeleteSticker(sticker.id)} title="Remove sticker">×</button>
-            </div>
-          ))}
+          {stickers.map((sticker, i) => {
+            const isHovered = hoveredId === `sticker-${sticker.id}`;
+            return (
+              <Rnd
+                key={sticker.id}
+                size={{ width: sticker.width || 100, height: sticker.height || 100 }}
+                position={{ x: sticker.pos_x || 200, y: sticker.pos_y || 100 }}
+                onDragStop={(e, d) => {
+                  setStickers(prev => prev.map((s, idx) =>
+                    idx === i ? { ...s, pos_x: d.x, pos_y: d.y } : s
+                  ));
+                  setSaved(false);
+                }}
+                onResizeStop={(e, direction, ref, delta, position) => {
+                  setStickers(prev => prev.map((s, idx) =>
+                    idx === i ? {
+                      ...s,
+                      width: parseInt(ref.style.width),
+                      height: parseInt(ref.style.height),
+                      pos_x: position.x,
+                      pos_y: position.y,
+                    } : s
+                  ));
+                  setSaved(false);
+                }}
+                bounds="parent"
+                enableResizing={ENABLE_CORNERS}
+                resizeHandleStyles={RND_HANDLE_STYLES}
+                resizeHandleComponent={isHovered ? undefined : {
+                  topLeft: <div style={{ display: 'none' }} />,
+                  topRight: <div style={{ display: 'none' }} />,
+                  bottomLeft: <div style={{ display: 'none' }} />,
+                  bottomRight: <div style={{ display: 'none' }} />,
+                }}
+                minWidth={40}
+                minHeight={40}
+                style={{ cursor: isHovered ? 'grab' : 'auto' }}
+              >
+                <div
+                  className="dl-rnd-item"
+                  onMouseEnter={() => setHoveredId(`sticker-${sticker.id}`)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <img
+                    src={`/${sticker.asset_path}`}
+                    alt={sticker.asset_name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                  <button
+                    className="dl-canvas-delete"
+                    style={{ opacity: isHovered ? 1 : 0 }}
+                    onMouseDown={e => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSticker(sticker.id);
+                    }}
+                  >×</button>
+                </div>
+              </Rnd>
+            );
+          })}
 
           {/* Empty state */}
           {photos.length === 0 && videos.length === 0 && audios.length === 0 && stickers.length === 0 && !answerText && (
