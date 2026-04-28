@@ -18,14 +18,18 @@ const prompts = [
 ];
 
 const assets = [
-  { name: 'Golden Star',    file: 'assets/stickers/star.png',       reward: false },
-  { name: 'Red Heart',      file: 'assets/stickers/heart.png',      reward: false },
-  { name: 'Rainbow',        file: 'assets/stickers/rainbow.png',    reward: false },
-  { name: 'Sun',            file: 'assets/stickers/sun.png',        reward: false },
-  { name: 'Moon',           file: 'assets/stickers/moon.png',       reward: false },
-  { name: 'Fire',           file: 'assets/stickers/fire.png',       reward: false },
-  { name: 'Confetti Crown', file: 'assets/stickers/crown.png',      reward: true  },
-  { name: 'Trophy',         file: 'assets/stickers/trophy.png',     reward: true  },
+  { name: 'Tape 0',  file: 'assets/tape/tape0.png',   reward: false },
+  { name: 'Tape 1',  file: 'assets/tape/tape1.png',   reward: false },
+  { name: 'Tape 2',  file: 'assets/tape/tape2.png',   reward: false },
+  { name: 'Tape 3',  file: 'assets/tape/tape3.png',   reward: false },
+  { name: 'Tape 4',  file: 'assets/tape/tape4.png',   reward: false },
+  { name: 'Tape 5',  file: 'assets/tape/tape5.png',   reward: false },
+  { name: 'Tape 6',  file: 'assets/tape/tape6.png',   reward: false },
+  { name: 'Tape 7',  file: 'assets/tape/tape7.png',   reward: false },
+  { name: 'Tape 8',  file: 'assets/tape/tape8.png',   reward: false },
+  { name: 'Tape 9',  file: 'assets/tape/tape9.png',   reward: false },
+  { name: 'Tape 10', file: 'assets/tape/tape10.png',  reward: false },
+  { name: 'Tape 11', file: 'assets/tape/tape11.png',  reward: false },
 ];
 
 async function seed() {
@@ -39,19 +43,56 @@ async function seed() {
   }
   console.log(`Inserted ${prompts.length} prompts.`);
 
+  // ── Art assets ───────────────────────────────────────────────────────────
+ 
+  // FIX 2: Delete any previously seeded assets whose file_path does NOT start
+  // with 'assets/tape/' — these are the old bad rows (empty file paths or
+  // wrong paths) that were showing up as blank boxes in the Magic Library.
+  // We do this BEFORE inserting new ones so we start from a clean state.
+  //
+  // IMPORTANT: This only deletes art_assets rows that aren't referenced by
+  // any log_stickers row, so it won't break existing placed stickers.
+  // If you want to also remove stickers using bad assets, uncomment the
+  // second DELETE below.
+  const deleted = await db.query(
+    `DELETE FROM art_assets
+     WHERE file_path NOT LIKE 'assets/tape/%'
+       -- Only delete rows not referenced by any placed sticker
+       AND id NOT IN (SELECT DISTINCT asset_id FROM log_stickers)
+     RETURNING id, name, file_path`
+  );
+  if (deleted.rows.length > 0) {
+    console.log(`Removed ${deleted.rows.length} stale/bad asset rows:`);
+    deleted.rows.forEach(r => console.log(`  - id=${r.id} name="${r.name}" path="${r.file_path}"`));
+  } else {
+    console.log('No stale asset rows to remove.');
+  }
+ 
+  // Upsert the tape assets. Using ON CONFLICT on file_path so re-running
+  // seed is safe — it updates the name/reward flag but won't duplicate rows.
+  // This requires a UNIQUE constraint on art_assets.file_path.
+  // If you don't have that constraint yet, run this migration first:
+  //   ALTER TABLE art_assets ADD CONSTRAINT art_assets_file_path_key UNIQUE (file_path);
   for (const a of assets) {
     await db.query(
-      `INSERT INTO art_assets (name, file_path, is_achievement_reward) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+      `INSERT INTO art_assets (name, file_path, is_achievement_reward)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (file_path) DO UPDATE
+         SET name = EXCLUDED.name,
+             is_achievement_reward = EXCLUDED.is_achievement_reward`,
       [a.name, a.file, a.reward]
     );
   }
-  console.log(`Inserted ${assets.length} art assets.`);
-
+  console.log(`Inserted/updated ${assets.length} art assets.`);
+ 
   console.log('Seed complete!');
   process.exit(0);
 }
+ 
 
 seed().catch(err => {
   console.error('Seed failed:', err);
   process.exit(1);
 });
+
+
