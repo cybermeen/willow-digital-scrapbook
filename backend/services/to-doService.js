@@ -1,4 +1,5 @@
 const db = require('../db/db');
+const ProgressService = require('./progressService');
 
 const ToDoService = {
 
@@ -9,7 +10,10 @@ const ToDoService = {
       INSERT INTO tasks (user_id, title, due_date, priority)
       VALUES ($1, $2, $3, $4) RETURNING *`;
     const result = await db.query(query, [userId, title, due_date, priority]);
-    return result.rows[0];
+    const newTask = result.rows[0];
+    await ProgressService.calculateDailyProgress(userId);
+    await ProgressService.calculateStreak(userId);
+    return newTask;
   },
 
   // Update an existing task (title, due_date, priority)
@@ -21,22 +25,31 @@ const ToDoService = {
       WHERE id = $4 AND user_id = $5
       RETURNING *`;
     const result = await db.query(query, [title, due_date, priority, taskId, userId]);
-    return result.rows[0] || null;
+    const updatedTask = result.rows[0] || null;
+    if (updatedTask) {
+      await ProgressService.calculateDailyProgress(userId);
+      await ProgressService.calculateStreak(userId);
+    }
+    return updatedTask;
   },
 
   // Get and categorise tasks
-async getCategorizedTasks(userId) {
-  const query = 'SELECT * FROM tasks WHERE user_id = $1 ORDER BY due_date ASC';
-  const { rows } = await db.query(query, [userId]);
+  async getCategorizedTasks(userId) {
+    const query = 'SELECT * FROM tasks WHERE user_id = $1 ORDER BY due_date ASC';
+    const { rows } = await db.query(query, [userId]);
 
-  // Use LOCAL date (not UTC) to avoid timezone shifting
-  const toLocalISO = (d) => {
-    const date = new Date(d);
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
+    // Use the date portion only to avoid clock offsets when the server returns a timestamp
+    const toLocalISO = (d) => {
+      if (!d) return '';
+      if (typeof d === 'string') {
+        const normalized = d.replace(' ', 'T');
+        return normalized.split('T')[0];
+      }
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
 
   const todayISO    = toLocalISO(new Date());
   const nextWeekISO = toLocalISO(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -78,6 +91,8 @@ async getCategorizedTasks(userId) {
   // Delete a task
   async deleteTask(taskId, userId) {
     await db.query('DELETE FROM tasks WHERE id = $1 AND user_id = $2', [taskId, userId]);
+    await ProgressService.calculateDailyProgress(userId);
+    await ProgressService.calculateStreak(userId);
     return { message: 'Task deleted successfully' };
   }
 };
