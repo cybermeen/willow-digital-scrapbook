@@ -45,7 +45,7 @@ exports.getOrCreateLog = async (req, res) => {
       db.query('SELECT * FROM log_audio   WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query('SELECT * FROM log_notes   WHERE log_id = $1 ORDER BY z_index', [log.id]),
       db.query(
-        `SELECT lpa.*, rp.prompt_text
+        `SELECT lpa.*, rp.prompt_text, rp.category
          FROM prompt_answers lpa
          JOIN reflective_prompts rp ON lpa.prompt_id = rp.id
          WHERE lpa.log_id = $1`,
@@ -339,11 +339,20 @@ exports.getDailyPrompt = async (req, res) => {
       params.push(category);
     }
     
-    query += ` ORDER BY RANDOM() LIMIT 1`;
+    query += ` ORDER BY id`;
     
     const result = await db.query(query, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'No prompts found' });
-    res.json(result.rows[0]);
+    
+    // Pick a prompt based on day of year to ensure same prompt all day
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 0);
+    const diff = now - startOfYear;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    
+    const promptIndex = dayOfYear % result.rows.length;
+    res.json(result.rows[promptIndex]);
   } catch (err) {
     console.error('getDailyPrompt error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -353,13 +362,13 @@ exports.getDailyPrompt = async (req, res) => {
 exports.savePromptAnswer = async (req, res) => {
   try {
     const { logId } = req.params;
-    const { prompt_id, answer_text, pos_x, pos_y } = req.body;
+    const { prompt_id, answer_text, pos_x, pos_y, width, height, z_index } = req.body;
     const isOwner = await verifyLogOwnership(logId, req.user.id);
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
     if (!answer_text?.trim()) return res.status(400).json({ error: 'Answer text is required' });
     const result = await db.query(
-      `INSERT INTO prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [logId, prompt_id, answer_text.trim(), pos_x||0, pos_y||0]
+      `INSERT INTO prompt_answers (log_id, prompt_id, answer_text, pos_x, pos_y, width, height, z_index) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [logId, prompt_id, answer_text.trim(), pos_x||0, pos_y||0, width||260, height||120, z_index||0]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -371,14 +380,14 @@ exports.savePromptAnswer = async (req, res) => {
 exports.updatePromptAnswer = async (req, res) => {
   try {
     const { answerId } = req.params;
-    const { answer_text, pos_x, pos_y, z_index } = req.body;
+    const { answer_text, pos_x, pos_y, width, height, z_index } = req.body;
     const ownership = await db.query(`SELECT log_id FROM prompt_answers WHERE id = $1`, [answerId]);
     if (!ownership.rows.length) return res.status(404).json({ error: 'Not found' });
     const isOwner = await verifyLogOwnership(ownership.rows[0].log_id, req.user.id);
     if (!isOwner) return res.status(403).json({ error: 'Access denied' });
     const result = await db.query(
-      `UPDATE prompt_answers SET answer_text=COALESCE($1,answer_text), pos_x=COALESCE($2,pos_x), pos_y=COALESCE($3,pos_y), z_index=COALESCE($4,z_index) WHERE id=$5 RETURNING *`,
-      [answer_text, pos_x, pos_y, z_index, answerId]
+      `UPDATE prompt_answers SET answer_text=COALESCE($1,answer_text), pos_x=COALESCE($2,pos_x), pos_y=COALESCE($3,pos_y), width=COALESCE($4,width), height=COALESCE($5,height), z_index=COALESCE($6,z_index) WHERE id=$7 RETURNING *`,
+      [answer_text, pos_x, pos_y, width, height, z_index, answerId]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -510,6 +519,13 @@ exports.saveLayout = async (req, res) => {
       }
     }
     if (stickers) {
+      for (const s of stickers) {
+        await db.query(
+          `UPDATE log_stickers SET pos_x=COALESCE($1,pos_x), pos_y=COALESCE($2,pos_y), width=COALESCE($3,width), height=COALESCE($4,height), z_index=COALESCE($5,z_index) WHERE id=$6 AND log_id=$7`,
+          [s.pos_x, s.pos_y, s.width, s.height, s.z_index, s.id, logId]
+        );
+      }
+    }    if (stickers) {
       for (const s of stickers) {
         await client.query(
           `UPDATE log_stickers SET pos_x=$1,pos_y=$2,width=$3,height=$4,rotation=$5,z_index=$6 WHERE id=$7 AND log_id=$8`,
