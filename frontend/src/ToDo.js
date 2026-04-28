@@ -5,21 +5,31 @@ const API_URL = '/api/todo';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function parseDateOnly(dateStr) {
+  if (!dateStr) return null;
+  const [datePart] = dateStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
 function formatDueDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = parseDateOnly(dateStr);
+  return d
+    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
 }
 
 function formatCompletedAt(dateStr) {
-  if (!dateStr) return '';
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function toInputDate(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr).toISOString().split('T')[0];
+  const d = parseDateOnly(dateStr);
+  return d
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    : '';
 }
 
 function priorityStyle(priority) {
@@ -29,6 +39,55 @@ function priorityStyle(priority) {
     case 'low':    return { bg: '#eaf6ee', color: '#27ae60' };
     default:       return { bg: '#f0f0f0', color: '#999' };
   }
+}
+
+// ─── Streak Widget ────────────────────────────────────────────────────────────
+ 
+function StreakWidget({ lastUpdated }) {
+  const [streak, setStreak] = useState(null);
+  const [prevStreak, setPrevStreak] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+ 
+  useEffect(() => {
+    fetch('/api/progress/streak', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        setStreak(data);
+        if (data.rewardsUnlocked && prevStreak !== null && !prevStreak.rewardsUnlocked) {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 3000);
+        }
+        setPrevStreak(data);
+      })
+      .catch(() => {});
+  }, [lastUpdated]);
+ 
+  if (!streak) return null;
+ 
+  const { currentStreak, rewardsUnlocked } = streak;
+  const filledDots = Math.min(currentStreak, 7);
+ 
+  return (
+    <div className="streak-widget streak-widget--minimal">
+      <div className="streak-dots streak-dots--minimal">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <span
+            key={i}
+            className={`streak-dot ${i < filledDots ? 'streak-dot--filled' : 'streak-dot--empty'}`}
+            aria-label={`Day ${i + 1}${i < filledDots ? ' completed' : ''}`}
+          >
+            {i < filledDots ? '🔥' : '○'}
+          </span>
+        ))}
+      </div>
+      <p className="streak-minor-msg">
+        {rewardsUnlocked
+          ? `7-day streak unlocked!` 
+          : `${currentStreak} day${currentStreak !== 1 ? 's' : ''} streak`}
+      </p>
+    </div>
+  );
 }
 
 // ─── Task Modal (Add / Edit) ──────────────────────────────────────────────────
@@ -271,7 +330,7 @@ function CompletedSection({ tasks, onToggle, onDelete }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-function ToDo({ onTaskChange}) {
+function ToDo({ onTaskChange, lastUpdated }) {
   const [tasks, setTasks]       = useState({ today: [], thisWeek: [], upcoming: [], completed: [] });
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
@@ -290,7 +349,7 @@ function ToDo({ onTaskChange}) {
     }
   }, []);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => { fetchTasks(); }, [fetchTasks, lastUpdated]);
 
   // ── Create ────────────────────────────────────────────────────────────────
   const handleAdd = async ({ title, due_date, priority }) => {
@@ -304,6 +363,7 @@ function ToDo({ onTaskChange}) {
       if (!res.ok) throw new Error();
       setModal(null);
       await fetchTasks();
+      if (onTaskChange) onTaskChange();
     } catch {
       setError('Could not create task.');
     }
@@ -321,6 +381,7 @@ function ToDo({ onTaskChange}) {
       if (!res.ok) throw new Error();
       setModal(null);
       await fetchTasks();
+      if (onTaskChange) onTaskChange();
     } catch {
       setError('Could not update task.');
     }
@@ -350,6 +411,7 @@ function ToDo({ onTaskChange}) {
       });
       if (!res.ok) throw new Error();
       await fetchTasks();
+      if (onTaskChange) onTaskChange();
     } catch {
       setError('Could not delete task.');
     }
@@ -385,6 +447,8 @@ function ToDo({ onTaskChange}) {
           </span>
         )}
       </div>
+
+      <StreakWidget lastUpdated={lastUpdated} />
 
       {error && (
         <div className="todo-error" role="alert">
