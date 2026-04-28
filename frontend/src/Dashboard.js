@@ -6,7 +6,7 @@ import Scrapbook from './Scrapbook';
 import './Dashboard.css';
 
 function Dashboard({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('todo');
+  const [activeTab, setActiveTab] = useState('today');
 
   const navItems = [
     { id: 'daylog',    label: 'Day Log' },
