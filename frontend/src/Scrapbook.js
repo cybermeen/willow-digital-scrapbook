@@ -119,14 +119,53 @@ function LogPage({ log, side }) {
             </div>
           ))}
 
+          {/* Videos */}
+          {detail.videos?.map(video => (
+            <div
+              key={video.id}
+              className="sb-media-item sb-video-item"
+              style={{
+                top: `${video.pos_y || 80}px`,
+                left: `${video.pos_x || (side === 'left' ? 40 : 30)}px`,
+                width: `${video.width || 320}px`,
+                height: `${video.height || 180}px`,
+                zIndex: video.z_index || 0,
+              }}
+            >
+              <video src={`/${video.file_path}`} controls muted playsInline />
+            </div>
+          ))}
+
+          {/* Audio */}
+          {detail.audio?.map(audio => (
+            <div
+              key={audio.id}
+              className="sb-media-item sb-audio-item"
+              style={{
+                top: `${audio.pos_y || 180}px`,
+                left: `${audio.pos_x || (side === 'left' ? 40 : 30)}px`,
+                width: `${audio.width || 300}px`,
+                height: `${audio.height || 90}px`,
+                zIndex: audio.z_index || 0,
+              }}
+            >
+              <div className="sb-audio-card">
+                <span className="sb-audio-label">🎵 {audio.original_name || 'Audio'}</span>
+                <audio src={`/${audio.file_path}`} controls />
+              </div>
+            </div>
+          ))}
+
           {/* Prompt answers */}
-          {detail.answers?.map((answer, i) => (
+          {detail.answers?.map(answer => (
             <div
               key={answer.id}
               className="sb-answer-wrap"
               style={{
-                bottom: `${80 + i * 60}px`,
-                left: side === 'left' ? '20px' : '15px',
+                top: `${answer.pos_y || 80}px`,
+                left: `${answer.pos_x || (side === 'left' ? 20 : 15)}px`,
+                width: `${answer.width || 260}px`,
+                minHeight: `${answer.height || 120}px`,
               }}
             >
               <div className="sb-answer-prompt">{answer.prompt_text}:</div>
