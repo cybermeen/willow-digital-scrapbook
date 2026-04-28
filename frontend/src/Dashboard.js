@@ -20,12 +20,7 @@ function Dashboard({ user, onLogout }) {
     : user?.email?.charAt(0).toUpperCase() || '?';
 
   const [lastUpdated, setLastUpdated] = useState(Date.now());
-  
   const handleTaskChange = () => setLastUpdated(Date.now());
-
-  // then pass down:
-  {activeTab === 'todo'  && <ToDo user={user} onTaskChange={handleTaskChange} />}
-  {activeTab === 'today' && <Progress lastUpdated={lastUpdated} />}
 
   return (
     <div className="dashboard">
@@ -56,8 +51,8 @@ function Dashboard({ user, onLogout }) {
       </header>
 
       <main className="dashboard-main">
-        {activeTab === 'today'     && <Progress />}
-        {activeTab === 'todo'      && <ToDo user={user} />}
+        {activeTab === 'today'     && <Progress lastUpdated={lastUpdated} />}
+        {activeTab === 'todo'      && <ToDo user={user} onTaskChange={handleTaskChange} />}
         {activeTab === 'daylog'    && <DayLog user={user} />}
         {activeTab === 'scrapbook' && <Scrapbook user={user} />}
       </main>
