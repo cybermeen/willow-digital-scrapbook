@@ -41,6 +41,7 @@ app.use('/api/scrapbook', scrapbookRoutes);
 
 // Static file uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/assets',  express.static(path.join(__dirname, 'assets')));
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
