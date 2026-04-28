@@ -866,7 +866,7 @@ export default function DayLog({ user }) {
           ))}
 
           {/* Empty state */}
-          {photos.length === 0 && videos.length === 0 && audio.length === 0 && stickers.length === 0 && !answerText && (
+          {photos.length === 0 && videos.length === 0 && audios.length === 0 && stickers.length === 0 && !answerText && (
             <div className="dl-canvas-empty">
               <p>Your log is empty — add photos, videos, audio, answer the prompt, or place stickers!</p>
             </div>
