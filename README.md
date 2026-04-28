@@ -1,91 +1,111 @@
-# Willow - A Digital Log for Everyday
+# Willow — A Digital Log for Everyday
 
-## Project Overview
+Willow is a personal, daily-use web application that combines productivity with creativity. It lets users manage tasks in a light, gamified way while also offering a space to capture moments from their day through a digital scrapbook-style log. Rather than focusing strictly on productivity or mindfulness, Willow aims to create a positive and enjoyable experience that users are motivated to return to daily.
 
-This repository contains the backend server for a journaling and task management web application.
+---
 
-The backend provides:
+## Features
 
-- User authentication with session-based login/logout
-- Scrapbook / daily log management with photos, notes, prompts, stickers, and layout saving
-- Todo list management with categorized tasks and completion toggling
-- Image upload support and static serving of uploaded files
+### Workflow 1 — User Onboarding & Authentication + Daily Planning & Task Management
+Secure account creation, authentication, and session-based login/logout management. Includes credential validation and a personalized dashboard upon login. Also features comprehensive to-do list functionality allowing users to create, view, edit, and complete tasks. Tasks are categorized by timeframe (**Today**, **This Week**, **Upcoming**) and support priority levels. Completed tasks are visually distinguished.
 
-## Setup Instructions
+### Workflow 2 — Streaks, Rewards & Achievements
+A gamification layer that tracks daily streaks, awards rewards, and unlocks exclusive stickers and other incentives when users complete their daily tasks.
+
+### Workflow 3 — Daily Log Scrapbooking
+A digital canvas for users to record and decorate moments from their day:
+
+- **Photos** — Upload and freely position images on the daily canvas
+- **Reflective Prompts** — Answer short, randomized daily prompts to encourage reflection
+- **Art Assets & Stickers** — Decorate logs with an unlocked ,agic library of stickers
+- **Layout Customization** — Flexible, draggable arrangement that saves exact coordinates (x/y, rotation, z-index) of all canvas elements
+- **Achievements** — Unlock exclusive stickers and rewards by completing all daily tasks
+
+---
+
+##  Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend Environment | Node.js |
+| Backend Framework | Express.js |
+| Database | PostgreSQL |
+| Password Security | `bcrypt` |
+| Session Management | `express-session` |
+| File Uploads | `multer` |
+| DB Client | `pg` |
+| Config | `dotenv` |
+
+---
+
+## Setup & Installation
 
 ### Prerequisites
+- **Node.js** v18+
+- **PostgreSQL** installed and running locally
 
-- Node.js (v18+ recommended)
-- PostgreSQL database
-- Git (optional)
+### 1. Clone the Repository
+```bash
+git clone https://github.com/cybermeen/willow-digital-scrapbook
+cd willow-digital-scrapbook
+```
 
-### Install dependencies
-
-Open a terminal in the project root and run:
-
+### 2. Install Dependencies
 ```bash
 cd backend
 npm install
 ```
 
-### Configure environment variables
-
-Create a `.env` file inside `backend` with the following variables:
-
+### 3. Configure Environment Variables
+Create a `.env` file inside the `backend` directory:
 ```env
 PORT=3000
-SESSION_SECRET=your_session_secret
+SESSION_SECRET=your_super_secret_session_key
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
+DB_NAME=your_db_name
+DB_USER=your_postgres_username
+DB_PASSWORD=your_postgres_password
 UPLOAD_PATH=./uploads
 ```
 
-`UPLOAD_PATH` is optional. If omitted, uploads are stored in `backend/uploads` by default.
+### 4. Set Up the Database
+1. Open your PostgreSQL client (e.g., `psql`, pgAdmin) and create a database matching your `DB_NAME`:
+   ```sql
+   CREATE DATABASE willow_db;
+   ```
+2. Run the schema file to generate all required tables:
+   ```bash
+   psql -U your_postgres_username -d your_db_name -f backend/db/schema.sql
+   ```
+3. Seed the database with default prompts and art assets:
+   ```bash
+   node seed.js
+   ```
 
-### Database setup
-
-Create the PostgreSQL database and run the SQL schema file in `backend/db/schema.sql` if your app includes it.
-
-If the project does not provide automated migrations, use your preferred database client to create the required tables.
-
-### Start the server
-
-From the `backend` folder run:
-
+### 5. Run the server
 ```bash
 npm start
 ```
 
-The server will start on the configured `PORT` (default: `3000`).
-
-### Verify startup
-
-Successful startup should show:
-
-```text
-🚀 Server running on port 3000
+The server will start on the configured port. You should see:
 ```
-
-and a database connection confirmation:
-
-```text
+Server running on port 5000
 Connected to PostgreSQL successfully!
 ```
-
+### 6. Run the frontend
+```bash
+cd frontend
+npm install
+npm start
+```
 ---
 
-## Backend API Documentation
+##  Team Contributions
 
-The detailed API documentation is located in `backend/README.md`.
+### Aabeerah Iqbal
+- **Workflow 1 — User Authentication + Daily Planning & Task Management:** Developed the secure user authentication system, including registration, credential validation, password hashing with bcrypt, and session-based login/logout flows. Also engineered the task tracking system, including the database schema, API routes for creating/editing/deleting tasks, and categorization logic (Today, This Week, Upcoming, Completed).
+- **Workflow 2 — Streaks, Rewards & Achievements:** Built the gamification layer of the application, including streak tracking, reward logic, and the achievements system that unlocks exclusive stickers and other incentives upon completing daily tasks.
 
-
-## Uploads and static files
-
-Uploaded files are saved to the `uploads` folder (or the path defined by `UPLOAD_PATH`).
-
-- Uploaded files are served statically at: `http://localhost:3000/uploads/<filename>`
-- Use `POST /api/scrapbook/photos/:logId` to upload image files.
-
+### Zarmeen Rahman
+- **Workflow 3 — Daily Log Scrapbooking:** Architected and implemented the digital scrapbook feature. Built backend support for photo uploads via `multer`, reflective prompt generation, note-taking, sticker placements, and layout-saving endpoints that persist absolute positional data (x/y coordinates, rotation, z-index) for all canvas elements.
