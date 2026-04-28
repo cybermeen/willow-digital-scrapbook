@@ -713,3 +713,473 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+/* Video canvas item */
+.dl-canvas-item--video {
+  width: 320px;
+}
+
+.dl-video-wrap {
+  background: #1a1a2e;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e8ede8;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.dl-video-player {
+  width: 100%;
+  max-width: 316px;
+  display: block;
+  border-radius: 8px 8px 0 0;
+  background: #000;
+}
+
+/* Audio canvas item */
+.dl-canvas-item--audio {
+  width: 300px;
+}
+
+.dl-audio-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #e0e8e0;
+  padding: 0.75rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.dl-audio-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dl-audio-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.dl-audio-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3d5c3d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.dl-audio-player {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  accent-color: #5c7a5c;
+}
+
+/* Shared media label */
+.dl-media-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+  color: #a0b0a0;
+  background: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-media-size {
+  font-size: 0.7rem;
+  color: #7a8c7a;
+  background: #eaf3ea;
+  padding: 0.1rem 0.4rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+ 
+/* ═══════════════════════════════════════════════════════════════
+   STREAK REWARDS — DayLog
+   ═══════════════════════════════════════════════════════════════ */
+ 
+.dl-streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff8f0;
+  border: 1px solid #f0d8b8;
+  border-radius: 10px;
+  padding: 0.4rem 0.75rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #a07040;
+}
+ 
+.dl-streak-badge--unlocked {
+  background: linear-gradient(135deg, #fffbf0, #fff8e1);
+  border-color: #f5c842;
+  animation: dl-badge-glow 2.5s ease-in-out infinite;
+}
+ 
+@keyframes dl-badge-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 200, 66, 0); }
+  50%       { box-shadow: 0 0 0 3px rgba(245, 200, 66, 0.25); }
+}
+ 
+.dl-streak-badge-flame {
+  font-size: 1rem;
+}
+ 
+.dl-streak-badge-count {
+  flex: 1;
+}
+ 
+.dl-streak-badge-unlocked {
+  font-size: 0.68rem;
+  background: linear-gradient(90deg, #f5c842, #f0a030);
+  color: #fff;
+  padding: 0.1rem 0.45rem;
+  border-radius: 20px;
+  font-weight: 800;
+}
+ 
+/* ── Open button inside editor ── */
+.dl-streak-open-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.9rem;
+  background: linear-gradient(135deg, #fffbf0, #fff8e1);
+  border: 1.5px dashed #f5c842;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #8a6010;
+  transition: all 0.2s;
+  position: relative;
+}
+ 
+.dl-streak-open-btn:hover {
+  background: linear-gradient(135deg, #fff8e0, #fff3cc);
+  border-color: #e0a800;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(245, 200, 66, 0.2);
+}
+ 
+.dl-streak-open-icon {
+  font-size: 1.1rem;
+}
+ 
+.dl-streak-open-badge {
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-weight: 800;
+  background: #f5c842;
+  color: #5a4000;
+  padding: 0.1rem 0.4rem;
+  border-radius: 20px;
+  letter-spacing: 0.06em;
+  animation: new-badge-pulse 1.5s ease-in-out infinite;
+}
+ 
+@keyframes new-badge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.7; transform: scale(0.95); }
+}
+ 
+/* ── Streak Rewards panel ── */
+.dl-streak-rewards {
+  background: linear-gradient(135deg, #fffbf0, #fff8e1);
+  border: 1.5px solid #f5c842;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  animation: rewards-panel-in 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+ 
+@keyframes rewards-panel-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+ 
+.dl-streak-rewards-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+ 
+.dl-streak-rewards-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #7a5200;
+}
+ 
+.dl-streak-rewards-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #b09060;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+ 
+.dl-streak-rewards-close:hover { background: rgba(0,0,0,0.07); }
+ 
+.dl-streak-rewards-sub {
+  font-size: 0.72rem;
+  color: #a08050;
+  margin: 0;
+  font-style: italic;
+}
+ 
+/* ── Tabs ── */
+.dl-streak-tabs {
+  display: flex;
+  gap: 0.4rem;
+}
+ 
+.dl-streak-tab {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1.5px solid #e8d8a8;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.5);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a08050;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+ 
+.dl-streak-tab--active {
+  background: #f5c842;
+  border-color: #e0a800;
+  color: #5a4000;
+  box-shadow: 0 2px 6px rgba(245, 200, 66, 0.3);
+}
+ 
+.dl-streak-tab:hover:not(.dl-streak-tab--active) {
+  background: rgba(255,255,255,0.8);
+  border-color: #d0b870;
+}
+ 
+/* ── Emoji sticker grid ── */
+.dl-streak-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+ 
+.dl-streak-sticker-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.2rem;
+  background: rgba(255,255,255,0.65);
+  border: 1.5px solid #e8d8a8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+ 
+.dl-streak-sticker-btn:hover {
+  background: #fff;
+  border-color: #f5c842;
+  transform: scale(1.08);
+  box-shadow: 0 3px 10px rgba(245, 200, 66, 0.2);
+}
+ 
+.dl-streak-sticker-emoji {
+  font-size: 1.5rem;
+  display: block;
+  line-height: 1;
+}
+ 
+.dl-streak-sticker-label {
+  font-size: 0.55rem;
+  color: #a08050;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+ 
+/* ── Streak prompts list ── */
+.dl-streak-prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+ 
+.dl-streak-prompts-list::-webkit-scrollbar { width: 4px; }
+.dl-streak-prompts-list::-webkit-scrollbar-thumb { background: #e8d0a8; border-radius: 10px; }
+ 
+.dl-streak-prompt-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid #e8d8a8;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.2s;
+}
+ 
+.dl-streak-prompt-btn:hover {
+  background: #fff;
+  border-color: #f5c842;
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(245, 200, 66, 0.15);
+}
+ 
+.dl-streak-prompt-num {
+  color: #f5c842;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+ 
+.dl-streak-prompt-text {
+  font-size: 0.74rem;
+  color: #6b4a20;
+  font-weight: 600;
+  line-height: 1.45;
+}
+ 
+.dl-streak-rewards-back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  color: #a08050;
+  font-weight: 700;
+  padding: 0.2rem 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+ 
+.dl-streak-rewards-back:hover { color: #6b4a20; }
+ 
+/* ── Emoji sticker on canvas ── */
+.dl-emoji-sticker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+ 
+.dl-emoji-sticker-char {
+  display: block;
+  line-height: 1;
+  transition: transform 0.2s, filter 0.2s;
+  user-select: none;
+}
+ 
+.dl-emoji-sticker-char--hovered {
+  transform: scale(1.1);
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.2));
+}
+ 
+.dl-emoji-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ff5c5c;
+  color: #fff;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 0;
+  pointer-events: auto;
+}
+ 
+/* ── Unlock celebration toast ── */
+.dl-unlock-celebration {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  animation: celebration-in 0.4s cubic-bezier(0.34, 1.3, 0.64, 1), celebration-out 0.4s ease 3.5s forwards;
+  pointer-events: none;
+}
+ 
+@keyframes celebration-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)     scale(1); }
+}
+ 
+@keyframes celebration-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0)    scale(1); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.95); }
+}
+ 
+.dl-unlock-celebration-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: linear-gradient(135deg, #fffbf0, #fff8e1);
+  border: 2px solid #f5c842;
+  border-radius: 16px;
+  padding: 0.9rem 1.4rem;
+  box-shadow: 0 10px 40px rgba(245, 200, 66, 0.35), 0 4px 16px rgba(0,0,0,0.1);
+  font-family: 'Nunito', sans-serif;
+  max-width: 380px;
+}
+ 
+.dl-unlock-celebration-emoji {
+  font-size: 2rem;
+  animation: trophy-bounce 0.6s cubic-bezier(0.34, 1.5, 0.64, 1) infinite alternate;
+}
+ 
+@keyframes trophy-bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-4px); }
+}
+ 
+.dl-unlock-celebration-inner strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #7a5200;
+  margin-bottom: 0.15rem;
+}
+ 
+.dl-unlock-celebration-inner p {
+  font-size: 0.76rem;
+  color: #a07030;
+  margin: 0;
+}
+ 
